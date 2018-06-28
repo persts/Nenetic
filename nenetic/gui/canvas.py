@@ -253,4 +253,5 @@ class Canvas(QtWidgets.QGraphicsScene):
 
     def update_classified_image(self, pixmap):
         if self.classified_image is not None:
+            self.pixmap = pixmap.detach()
             self.classified_image.setPixmap(pixmap)
