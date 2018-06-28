@@ -167,11 +167,11 @@ class Canvas(QtWidgets.QGraphicsScene):
         count = 0
         package = {'classes': [], 'points': {}, 'colors': {}}
         package['classes'] = self.classes
-        for color in self.colors:
-            r = self.colors[color].red()
-            g = self.colors[color].green()
-            b = self.colors[color].blue()
-            package['colors'][color] = [r, g, b]
+        for class_name in self.colors:
+            r = self.colors[class_name].red()
+            g = self.colors[class_name].green()
+            b = self.colors[class_name].blue()
+            package['colors'][class_name] = [r, g, b]
         for image in self.points:
             package['points'][image] = {}
             for class_name in self.points[image]:
