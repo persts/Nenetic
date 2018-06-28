@@ -103,6 +103,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
             package, point_count = self.canvas.package_points()
             self.progress_max = point_count
+            self.progressBar.setValue(0)
             self.progressBar.setRange(0, 0)
 
             tab = self.tabWidgetExtractors.currentIndex()
@@ -167,6 +168,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 params['validation_split'] = self.doubleSpinBoxSplit.value()
                 self.trainer = Trainer(self.training_data, directory, params)
 
+                self.progressBar.setValue(0)
                 self.progressBar.setRange(0, self.spinBoxEpochs.value())
                 self.trainer.progress.connect(self.update_progress)
                 self.trainer.feedback.connect(self.log)
