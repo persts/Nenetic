@@ -25,30 +25,26 @@
 import numpy as np
 
 from nenetic.extractors import Vector
-from scipy.signal import convolve2d as c2d
 
 
-class Average(Vector):
+class Index(Vector):
     def __init__(self, kernels=5, solid_kernel=True):
         Vector.__init__(self)
-        self.kernels = []
 
-        self.name = 'Average'
-        self.kwargs = {'kernels': kernels, 'solid_kernel': solid_kernel}
-
-        for size in range(3, (kernels * 2) + 3, 2):
-            kernel = np.ones((size, size))
-            if not solid_kernel:
-                kernel[1:size - 1, 1:size - 1] = 0
-            self.kernels.append(kernel)
+        self.name = 'Index'
+        self.kwargs = {}
 
     def preprocess(self, image):
+        #np.seterr(divide='ignore', invalid='ignore')
         self.stack = [image / 255]
-        for kernel in self.kernels:
-            bands = []
-            for band in range(image.shape[2]):
-                b = c2d(image[:, :, 0], kernel, mode='same')
-                bands.append(b)
-            img = np.dstack(bands)
-            img = img / self.max_value
-            self.stack.append(img)
+        img = np.int32(image)
+        bands = np.split(img, img.shape[2], axis=2)
+        denom = np.clip(bands[1] + bands[0], 1, None)
+        vndvi = (((bands[1] - bands[0]) / denom) + 1 ) / 2
+        self.stack.append(vndvi)
+        denom = np.clip(2 * bands[1] + bands[0] + bands[2], 1, None)
+        gli = (((2 * bands[1] - bands[0] - bands[2]) / denom) + 1) / 2
+        self.stack.append(gli)
+        denom = np.clip(bands[1] + bands[0] - bands[2], 1, None)
+        vari = (((bands[1] - bands[0]) / denom) + 1) / 2
+        self.stack.append(vari)

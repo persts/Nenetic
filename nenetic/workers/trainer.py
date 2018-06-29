@@ -43,11 +43,11 @@ class Trainer(QtCore.QThread):
         self.learning_rate = model_parameters['learning_rate']
         self.l1_hidden_nodes = model_parameters['l1_hidden_nodes']
         self.l2_hidden_nodes = model_parameters['l2_hidden_nodes']
-        self.batch_size = 32
+        self.batch_size = 256
 
         self.directory = directory
 
-        split = int(len(data['data']) * model_parameters['validation_split'])
+        split = int(len(data['data']) * ( 1.0 - model_parameters['validation_split']))
         self.training_data = data['data'][0:split]
         self.training_labels = data['labels'][0:split]
         self.validation_data = data['data'][split:]
@@ -92,19 +92,23 @@ class Trainer(QtCore.QThread):
 
         with tf.Session() as sess:
             sess.run(init_op)
-            total_batch = int(len(self.training_data) / self.batch_size)
+            total_batch = int(len(self.training_data) / self.batch_size) + 1
+            batch_x = []
+            batch_y = []
+            for i in range(total_batch):
+                batch_x.append(np.array(self.training_data[self.batch_size * i:self.batch_size * (i + 1)]))
+                batch_y.append(np.array(self.training_labels[self.batch_size * i:self.batch_size * (i + 1)]))
             for epoch in range(self.epochs):
-                avg_loss = []
-                avg_acc = []
+                avg_loss = 0
+                avg_acc = 0
                 for i in range(total_batch):
-                    batch_x = self.training_data[self.batch_size * i:self.batch_size * (i + 1)]
-                    batch_y = self.training_labels[self.batch_size * i:self.batch_size * (i + 1)]
-                    sess.run([train_op], feed_dict={X: batch_x, Y: batch_y})
-                    loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x, Y: batch_y})
-                    avg_loss.append(loss)
-                    avg_acc.append(acc)
-                if epoch % 500 == 0:
-                    message = 'Epoch: {} batch loss: {:.5f} batch acc: {:.3f}'.format(epoch, np.mean(avg_loss), np.mean(avg_acc))
+                    sess.run([train_op], feed_dict={X: batch_x[i], Y: batch_y[i]})
+                    loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x[i], Y: batch_y[i]})
+                    if epoch % 50 == 0:
+                        avg_loss += loss / total_batch
+                        avg_acc += acc / total_batch
+                if epoch % 50 == 0:
+                    message = 'Epoch: {} batch loss: {:.5f} batch acc: {:.3f}'.format(epoch, avg_loss, avg_acc)
                     self.feedback.emit('Train', message)
                     self.log += message + "\n"
                 self.progress.emit(epoch + 1)

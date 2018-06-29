@@ -309,6 +309,11 @@ p, li { white-space: pre-wrap; }
            </item>
           </layout>
          </widget>
+         <widget class="QWidget" name="index">
+          <attribute name="title">
+           <string>Index</string>
+          </attribute>
+         </widget>
         </widget>
        </item>
        <item>
@@ -343,7 +348,7 @@ p, li { white-space: pre-wrap; }
         <x>0</x>
         <y>0</y>
         <width>382</width>
-        <height>408</height>
+        <height>387</height>
        </rect>
       </property>
       <attribute name="label">
@@ -479,7 +484,7 @@ p, li { white-space: pre-wrap; }
             <number>1000</number>
            </property>
            <property name="value">
-            <number>10000</number>
+            <number>2000</number>
            </property>
           </widget>
          </item>
@@ -680,7 +685,7 @@ p, li { white-space: pre-wrap; }
         <x>0</x>
         <y>0</y>
         <width>382</width>
-        <height>408</height>
+        <height>331</height>
        </rect>
       </property>
       <attribute name="label">

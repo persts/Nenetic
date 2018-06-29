@@ -30,7 +30,7 @@ from PIL import Image, ImageQt
 from PyQt5 import QtCore, QtGui
 
 from nenetic.extractors import *
-
+from nenetic.workers import BulkExtractor
 
 class Classifier(QtCore.QThread):
     progress = QtCore.pyqtSignal(int)
@@ -64,9 +64,14 @@ class Classifier(QtCore.QThread):
         self.update.emit(QtGui.QPixmap.fromImage(self.temp))
 
     def run(self):
-        self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
         self.feedback.emit('Classifier', 'Preparing extractor')
-        self.extractor.preprocess(self.image)
+        bulk_extractor = BulkExtractor(self.extractor, self.image)
+        bulk_extractor.progress.connect(self.relay_progress)
+        bulk_extractor.start()
+        #self.feedback.emit('Classifier', 'Bulk extracting vectors')
+        #while(bulk_extractor.isRunning()):
+            #self.sleep(1)
+        self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
         self.feedback.emit('Classifier', 'Classifying...')
         graph = tf.Graph()
         with graph.as_default():
@@ -77,19 +82,26 @@ class Classifier(QtCore.QThread):
                 X = graph.get_tensor_by_name('Placeholder:0')
                 prediction = graph.get_tensor_by_name('prediction:0')
 
-                for row in range(self.image.shape[0]):
-                    vector = self.extractor.extract_row(row)
+                progress = 0
+                #for vector in bulk_extractor.buffer():
+                row, vector = bulk_extractor.queue.get()
+                while row is not None:
                     predictions = sess.run(prediction, feed_dict={X: vector})
                     for i in range(self.image.shape[1]):
                         p = np.argmax(predictions[i])
                         if predictions[i][p] >= self.threshold:
                             class_name = self.classes[p]
                             self.result[row, i] = self.colors[class_name]
-                    self.progress.emit(row + 1)
-                    if row % 100 == 0:
+                    progress += 1
+                    self.progress.emit(progress)
+                    if row % 50 == 0:
                         self.prep_update()
-            self.prep_update()
+                    row, vector = bulk_extractor.queue.get()
             self.feedback.emit('Classifier', 'Classification completed.')
+        self.prep_update()
+
+    def relay_progress(self, value):
+        self.progress.emit(value)
 
     def save_classification(self, file_name):
         if self.result is not None:

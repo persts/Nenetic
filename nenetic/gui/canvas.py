@@ -61,7 +61,7 @@ class Canvas(QtWidgets.QGraphicsScene):
         if class_name not in self.classes:
             self.classes.append(class_name)
             self.classes.sort()
-            self.colors[class_name] = QtCore.Qt.black
+            self.colors[class_name] = QtGui.QColor(QtCore.Qt.black)
 
     def add_point(self, point):
         if self.current_image_name is not None and self.current_class_name is not None:

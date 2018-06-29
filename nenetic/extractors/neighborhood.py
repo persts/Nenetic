@@ -30,8 +30,6 @@ from nenetic.extractors import Vector
 class Neighborhood(Vector):
     def __init__(self, pad=1):
         Vector.__init__(self)
-        self.stack = []
-        self.kernels = []
         self.pad = pad
 
         self.name = 'Neighborhood'

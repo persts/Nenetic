@@ -44,6 +44,8 @@ class Vector(QtCore.QObject):
         self.labels = []
         self.colors = {}
 
+        self.stack = []
+
         self.name = ''
         self.kwargs = {}
         self.max_value = 255

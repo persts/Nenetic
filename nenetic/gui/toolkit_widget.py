@@ -66,6 +66,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         if self.canvas.base_image is not None and self.classifier is not None:
             self.checkBoxShowClassification.setChecked(True)
             array = np.array(self.canvas.base_image)
+            self.progressBar.setValue(0)
             self.progressBar.setRange(0, array.shape[0])
             self.classifier.image = array
             self.classifier.threshold = self.doubleSpinBoxConfidence.value()

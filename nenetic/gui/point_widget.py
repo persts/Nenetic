@@ -42,6 +42,7 @@ class PointWidget(QtWidgets.QWidget, WIDGET):
         self.pushButtonReset.clicked.connect(self.reset)
         self.pushButtonExport.clicked.connect(self.export)
 
+        self.tableWidgetClasses.verticalHeader().setVisible(False)
         self.tableWidgetClasses.horizontalHeader().setMinimumSectionSize(1)
         self.tableWidgetClasses.horizontalHeader().setStretchLastSection(False)
         self.tableWidgetClasses.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
