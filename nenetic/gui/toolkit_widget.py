@@ -115,6 +115,8 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 kwargs['solid_kernel'] = self.checkBoxSolidKernel.isChecked()
             elif extractor_name == 'Neighborhood':
                 kwargs['pad'] = self.spinBoxNeighborhood.value() // 2
+            elif extractor_name == 'Index':
+                kwargs['pad'] = self.spinBoxNeighborhood2.value() // 2
 
             self.extractor = Extractor(extractor_name, package, file_name[0], self.directory, kwargs)
             self.extractor.progress.connect(self.update_progress)

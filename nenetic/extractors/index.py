@@ -24,27 +24,36 @@
 # --------------------------------------------------------------------------
 import numpy as np
 
-from nenetic.extractors import Vector
+from nenetic.extractors import Neighborhood
 
 
-class Index(Vector):
-    def __init__(self, kernels=5, solid_kernel=True):
-        Vector.__init__(self)
+class Index(Neighborhood):
+    def __init__(self, pad=0):
+        Neighborhood.__init__(self, pad)
 
         self.name = 'Index'
-        self.kwargs = {}
+        self.kwargs = {'pad': pad}
 
     def preprocess(self, image):
-        #np.seterr(divide='ignore', invalid='ignore')
-        self.stack = [image / 255]
+        self.stack = [np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / 255]
         img = np.int32(image)
         bands = np.split(img, img.shape[2], axis=2)
         denom = np.clip(bands[1] + bands[0], 1, None)
         vndvi = (((bands[1] - bands[0]) / denom) + 1 ) / 2
-        self.stack.append(vndvi)
+        self.stack.append(np.pad(vndvi, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric'))
         denom = np.clip(2 * bands[1] + bands[0] + bands[2], 1, None)
         gli = (((2 * bands[1] - bands[0] - bands[2]) / denom) + 1) / 2
-        self.stack.append(gli)
+        self.stack.append(np.pad(gli, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric'))
         denom = np.clip(bands[1] + bands[0] - bands[2], 1, None)
         vari = (((bands[1] - bands[0]) / denom) + 1) / 2
-        self.stack.append(vari)
+        self.stack.append(np.pad(vari, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric'))
+        average = ((bands[0] + bands[1] + bands[2]) / 3) / 255
+        self.stack.append(np.pad(average, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric'))
+        luminosity = (0.21 * bands[0] + 0.72 * bands[1] + 0.07 * bands[2] ) / 255
+        self.stack.append(np.pad(luminosity, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric'))
+        maximum = np.maximum(bands[0], bands[1])
+        maximum = np.maximum(maximum, bands[2])
+        minimum = np.minimum(bands[0], bands[1])
+        minimum = np.minimum(minimum, bands[2])
+        lightness = ((maximum + minimum) / 2 ) /255
+        self.stack.append(np.pad(lightness, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric'))

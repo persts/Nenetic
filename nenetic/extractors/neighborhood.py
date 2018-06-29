@@ -28,7 +28,7 @@ from nenetic.extractors import Vector
 
 
 class Neighborhood(Vector):
-    def __init__(self, pad=1):
+    def __init__(self, pad=0):
         Vector.__init__(self)
         self.pad = pad
 
