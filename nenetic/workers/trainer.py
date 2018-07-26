@@ -47,7 +47,7 @@ class Trainer(QtCore.QThread):
 
         self.directory = directory
 
-        split = int(len(data['data']) * ( 1.0 - model_parameters['validation_split']))
+        split = int(len(data['data']) * (1.0 - model_parameters['validation_split']))
         self.training_data = data['data'][0:split]
         self.training_labels = data['labels'][0:split]
         self.validation_data = data['data'][split:]

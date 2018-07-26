@@ -32,6 +32,7 @@ from PyQt5 import QtCore, QtGui
 from nenetic.extractors import *
 from nenetic.workers import BulkExtractor
 
+
 class Classifier(QtCore.QThread):
     progress = QtCore.pyqtSignal(int)
     feedback = QtCore.pyqtSignal(str, str)
@@ -68,9 +69,9 @@ class Classifier(QtCore.QThread):
         bulk_extractor = BulkExtractor(self.extractor, self.image)
         bulk_extractor.progress.connect(self.relay_progress)
         bulk_extractor.start()
-        #self.feedback.emit('Classifier', 'Bulk extracting vectors')
-        #while(bulk_extractor.isRunning()):
-            #self.sleep(1)
+        # self.feedback.emit('Classifier', 'Bulk extracting vectors')
+        # while(bulk_extractor.isRunning()):
+        #    self.sleep(1)
         self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
         self.feedback.emit('Classifier', 'Classifying...')
         graph = tf.Graph()
@@ -83,7 +84,7 @@ class Classifier(QtCore.QThread):
                 prediction = graph.get_tensor_by_name('prediction:0')
 
                 progress = 0
-                #for vector in bulk_extractor.buffer():
+                # for vector in bulk_extractor.buffer():
                 row, vector = bulk_extractor.queue.get()
                 while row is not None:
                     predictions = sess.run(prediction, feed_dict={X: vector})

@@ -1,5 +1,5 @@
-from .canvas import Canvas
-from .point_widget import PointWidget
-from .toolkit_widget import ToolkitWidget
+from .canvas import Canvas  # noqa: F401
+from .point_widget import PointWidget  # noqa: F401
+from .toolkit_widget import ToolkitWidget  # noqa: F401
 
-from .central_widget import CentralWidget
+from .central_widget import CentralWidget  # noqa: F401

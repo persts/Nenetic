@@ -27,52 +27,52 @@ from multiprocessing import Process, Queue, cpu_count
 
 
 class BulkExtractor(QtCore.QThread):
-	progress = QtCore.pyqtSignal(int)
+    progress = QtCore.pyqtSignal(int)
 
-	def __init__(self, extractor, image):
-		QtCore.QThread.__init__(self)
-		self.image = image
-		self.extractor = extractor
-		self.extractor.preprocess(self.image)
-		self.vectors = [x for x in range(self.image.shape[0])]
+    def __init__(self, extractor, image):
+        QtCore.QThread.__init__(self)
+        self.image = image
+        self.extractor = extractor
+        self.extractor.preprocess(self.image)
+        self.vectors = [x for x in range(self.image.shape[0])]
 
-		self.queue = Queue()
-		self.processes = []
-		self.threads = cpu_count() - 1
-		for i in range(self.threads):
-			rows = [x for x in range(i, self.image.shape[0], self.threads)]
-			p = Process(target=self.extract, args=(rows, ))
-			self.processes.append(p)
+        self.queue = Queue()
+        self.processes = []
+        self.threads = cpu_count() - 1
+        for i in range(self.threads):
+            rows = [x for x in range(i, self.image.shape[0], self.threads)]
+            p = Process(target=self.extract, args=(rows, ))
+            self.processes.append(p)
 
-	def extract(self, rows):
-		count = 0
-		for row in rows:
-			self.queue.put([row, self.extractor.extract_row(row)])
-			count += 1
-		#self.queue.put([None, None])
-		return True
+    def extract(self, rows):
+        count = 0
+        for row in rows:
+            self.queue.put([row, self.extractor.extract_row(row)])
+            count += 1
+        # self.queue.put([None, None])
+        return True
 
-	def run(self):
-		for p in self.processes:
-			p.start()
-		
-		for p in self.processes:
-			p.join()
+    def run(self):
+        for p in self.processes:
+            p.start()
 
-		self.queue.put([None, None])
-		'''
-		progress = 0
-		terminate = 0
-		while terminate < self.threads:
-			row, vector = self.queue.get()
-			if row is None:
-				terminate += 1
-			else:
-				progress += 1
-				self.vectors[row] = vector
-				self.progress.emit(progress)
-		'''
+        for p in self.processes:
+            p.join()
 
-	def buffer(self):
-		for vector in self.vectors:
-			yield vector
+        self.queue.put([None, None])
+        '''
+        progress = 0
+        terminate = 0
+        while terminate < self.threads:
+            row, vector = self.queue.get()
+            if row is None:
+                terminate += 1
+            else:
+                progress += 1
+                self.vectors[row] = vector
+                self.progress.emit(progress)
+        '''
+
+    def buffer(self):
+        for vector in self.vectors:
+            yield vector

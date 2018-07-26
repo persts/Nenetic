@@ -62,6 +62,8 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.checkBoxShowClassification.stateChanged.connect(self.show_classification)
         self.horizontalSliderOpacity.valueChanged.connect(self.canvas.set_opacity)
 
+        self.canvas.image_loaded.connect(self.image_loaded)
+
     def classify_image(self):
         if self.canvas.base_image is not None and self.classifier is not None:
             self.checkBoxShowClassification.setChecked(True)
@@ -123,6 +125,9 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
             self.extractor.feedback.connect(self.log)
             self.extractor.finished.connect(self.enable_action_buttons)
             self.extractor.start()
+
+    def image_loaded(self, directory, image_name):
+        self.checkBoxShowClassification.setChecked(False)
 
     def load_model(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Model', self.directory, 'Model Metadata (*.meta)')
