@@ -414,7 +414,7 @@ p, li { white-space: pre-wrap; }
         <x>0</x>
         <y>0</y>
         <width>382</width>
-        <height>387</height>
+        <height>399</height>
        </rect>
       </property>
       <attribute name="label">
@@ -722,6 +722,16 @@ p, li { white-space: pre-wrap; }
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_19">
          <item>
+          <widget class="QPushButton" name="pushButtonStopTraining">
+           <property name="enabled">
+            <bool>false</bool>
+           </property>
+           <property name="text">
+            <string>Stop</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <spacer name="horizontalSpacer_24">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
@@ -750,8 +760,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>382</width>
-        <height>331</height>
+        <width>336</width>
+        <height>197</height>
        </rect>
       </property>
       <attribute name="label">

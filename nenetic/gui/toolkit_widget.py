@@ -54,10 +54,12 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
         self.pushButtonTrainingData.clicked.connect(self.load_training_data)
         self.pushButtonTrainModel.clicked.connect(self.train_model)
+        self.pushButtonStopTraining.clicked.connect(self.stop_training)
 
         self.pushButtonLoadModel.clicked.connect(self.load_model)
         self.pushButtonClassify.clicked.connect(self.classify_image)
         self.pushButtonSaveClassification.clicked.connect(self.save_classification)
+        self.pushButtonStopClassification.clicked.connect(self.stop_classification)
 
         self.checkBoxShowClassification.stateChanged.connect(self.show_classification)
         self.horizontalSliderOpacity.valueChanged.connect(self.canvas.set_opacity)
@@ -94,7 +96,9 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.pushButtonSaveClassification.setEnabled(True)
         self.pushButtonLoadModel.setEnabled(True)
 
+        self.pushButtonStopTraining.setEnabled(False)
         self.pushButtonStopClassification.setEnabled(False)
+        self.classifier.stop = False
 
     def extract_training_data(self):
         if self.directory is None:
@@ -164,6 +168,12 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
     def show_classification(self):
         self.canvas.toggle_classification(self.checkBoxShowClassification.isChecked())
 
+    def stop_classification(self):
+        self.classifier.stop = True
+
+    def stop_training(self):
+        self.trainer.stop = True
+
     def train_model(self):
         if self.training_data is not None:
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Save Model To Directory', self.directory)
@@ -181,6 +191,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 self.trainer.progress.connect(self.update_progress)
                 self.trainer.feedback.connect(self.log)
                 self.trainer.finished.connect(self.enable_action_buttons)
+                self.pushButtonStopTraining.setEnabled(True)
                 self.disable_action_buttons()
                 self.trainer.start()
 

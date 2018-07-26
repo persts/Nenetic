@@ -59,7 +59,8 @@ class BulkExtractor(QtCore.QThread):
         for p in self.processes:
             p.join()
 
-        self.queue.put([None, None])
+        if self.queue is not None:
+            self.queue.put([None, None])
         '''
         progress = 0
         terminate = 0

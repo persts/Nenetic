@@ -40,6 +40,7 @@ class Classifier(QtCore.QThread):
 
     def __init__(self, model):
         QtCore.QThread.__init__(self)
+        self.stop = False
         self.image = None
         self.result = None
         self.threshold = 0.9
@@ -98,6 +99,12 @@ class Classifier(QtCore.QThread):
                     if row % 50 == 0:
                         self.prep_update()
                     row, vector = bulk_extractor.queue.get()
+                    if self.stop:
+                        for p in bulk_extractor.processes:
+                            p.terminate()
+                        self.feedback.emit('Classifier', 'Classification interrupted.')
+                        bulk_extractor.queue = None
+                        return
             self.feedback.emit('Classifier', 'Classification completed.')
         self.prep_update()
 

@@ -36,6 +36,7 @@ class Trainer(QtCore.QThread):
 
     def __init__(self, data, directory, model_parameters):
         QtCore.QThread.__init__(self)
+        self.stop = False
         self.classes = data['classes']
         self.colors = data['colors']
         self.extractor = data['extractor']
@@ -112,6 +113,9 @@ class Trainer(QtCore.QThread):
                     self.feedback.emit('Train', message)
                     self.log += message + "\n"
                 self.progress.emit(epoch + 1)
+                if self.stop:
+                    self.feedback.emit('Train', 'Training interrupted.')
+                    return
 
             message = "Train Acc: {:.5f}".format(sess.run(accuracy, feed_dict={X: self.training_data, Y: self.training_labels}))
             self.feedback.emit('Train', message)
