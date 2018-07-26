@@ -184,6 +184,17 @@ class Canvas(QtWidgets.QGraphicsScene):
                     count += 1
         return (package, count)
 
+    def rename_class(self, old_class, new_class):
+        print(old_class, new_class)
+        self.colors[new_class] = self.colors.pop(old_class)
+        index = self.classes.index(old_class)
+        del self.classes[index]
+        self.classes.append(new_class)
+        self.classes.sort()
+        for image in self.points:
+            if old_class in self.points[image]:
+                self.points[image][new_class] = self.points[image].pop(old_class)
+
     def reset(self, clear_image=False):
         self.points = {}
         self.colors = {}

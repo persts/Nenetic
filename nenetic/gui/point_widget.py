@@ -48,6 +48,7 @@ class PointWidget(QtWidgets.QWidget, WIDGET):
         self.tableWidgetClasses.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.tableWidgetClasses.setColumnWidth(1, 30)
         self.tableWidgetClasses.cellClicked.connect(self.cell_clicked)
+        self.tableWidgetClasses.cellChanged.connect(self.cell_changed)
         self.tableWidgetClasses.selectionModel().selectionChanged.connect(self.selection_changed)
 
         self.checkBoxDisplayPoints.toggled.connect(self.display_points)
@@ -76,6 +77,15 @@ class PointWidget(QtWidgets.QWidget, WIDGET):
         item = self.model.itemFromIndex(model_index)
         if item.isSelectable():
             self.canvas.load_image(item.text())
+
+    def cell_changed(self, row, column):
+        if column == 0:
+            old_class = self.canvas.classes[row]
+            new_class = self.tableWidgetClasses.item(row, column).text()
+            if old_class != new_class:
+                self.canvas.rename_class(old_class, new_class)
+                self.display_classes()
+                self.display_count_tree()
 
     def cell_clicked(self, row, column):
         if column == 1:
