@@ -43,7 +43,7 @@ class Average(Vector):
             self.kernels.append(kernel)
 
     def preprocess(self, image):
-        self.stack = [image / 255]
+        self.stack = [image / self.max_value]
         for kernel in self.kernels:
             bands = []
             for band in range(image.shape[2]):

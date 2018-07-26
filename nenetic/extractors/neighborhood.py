@@ -53,4 +53,4 @@ class Neighborhood(Vector):
         return vector
 
     def preprocess(self, image):
-        self.stack = [np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / 255]
+        self.stack = [np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value]

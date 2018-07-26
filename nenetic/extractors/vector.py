@@ -113,7 +113,7 @@ class Vector(QtCore.QObject):
         return vector
 
     def preprocess(self, image):
-        self.stack = [image / 255]
+        self.stack = [image / self.max_value]
 
     def save(self, file_name):
         self.shuffle()
