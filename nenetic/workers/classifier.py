@@ -38,27 +38,34 @@ class Classifier(QtCore.QThread):
     feedback = QtCore.pyqtSignal(str, str)
     update = QtCore.pyqtSignal(QtGui.QPixmap)
 
-    def __init__(self, model):
+    def __init__(self, model=None):
         QtCore.QThread.__init__(self)
         self.stop = False
         self.image = None
         self.result = None
         self.threshold = 0.9
-
-        self.directory = os.path.split(model)[0]
-        file = open(os.path.join(self.directory, "nenetic-metadata.json"))
-        data = json.load(file)
-        file.close()
         self.model = model
 
-        self.classes = data['classes']
-        self.colors = {}
-        for color in data['colors']:
-            self.colors[color] = np.array(data['colors'][color])
+        if model is not None:
+            self.directory = os.path.split(model)[0]
+            # Need to test if file exists
+            file = open(os.path.join(self.directory, "nenetic-metadata.json"))
+            data = json.load(file)
+            file.close()
 
-        name = data['extractor']['name']
-        kwargs = data['extractor']['kwargs']
-        self.extractor = globals()[name](**kwargs)
+            self.classes = data['classes']
+            self.colors = {}
+            for color in data['colors']:
+                self.colors[color] = np.array(data['colors'][color])
+
+            name = data['extractor']['name']
+            kwargs = data['extractor']['kwargs']
+            self.extractor = globals()[name](**kwargs)
+
+    def load_classified_image(self, file_name):
+        img = Image.open(file_name)
+        self.result = np.array(img)
+        self.prep_update()
 
     def prep_update(self):
         img = Image.fromarray(np.uint8(self.result))
@@ -66,47 +73,51 @@ class Classifier(QtCore.QThread):
         self.update.emit(QtGui.QPixmap.fromImage(self.temp))
 
     def run(self):
-        self.feedback.emit('Classifier', 'Preparing extractor')
-        bulk_extractor = BulkExtractor(self.extractor, self.image)
-        bulk_extractor.progress.connect(self.relay_progress)
-        bulk_extractor.start()
-        # self.feedback.emit('Classifier', 'Bulk extracting vectors')
-        # while(bulk_extractor.isRunning()):
-        #    self.sleep(1)
-        self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
-        self.feedback.emit('Classifier', 'Classifying...')
-        graph = tf.Graph()
-        with graph.as_default():
-            with tf.Session() as sess:
-                meta = tf.train.import_meta_graph(self.model)
-                meta.restore(sess, tf.train.latest_checkpoint(self.directory))
+        if self.model is not None:
+            print('here')
+            self.feedback.emit('Classifier', 'Preparing extractor')
+            bulk_extractor = BulkExtractor(self.extractor, self.image)
+            bulk_extractor.progress.connect(self.relay_progress)
+            bulk_extractor.start()
+            # self.feedback.emit('Classifier', 'Bulk extracting vectors')
+            # while(bulk_extractor.isRunning()):
+            #    self.sleep(1)
+            self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
+            self.feedback.emit('Classifier', 'Classifying...')
+            graph = tf.Graph()
+            with graph.as_default():
+                with tf.Session() as sess:
+                    meta = tf.train.import_meta_graph(self.model)
+                    meta.restore(sess, tf.train.latest_checkpoint(self.directory))
 
-                X = graph.get_tensor_by_name('Placeholder:0')
-                prediction = graph.get_tensor_by_name('prediction:0')
+                    X = graph.get_tensor_by_name('Placeholder:0')
+                    prediction = graph.get_tensor_by_name('prediction:0')
 
-                progress = 0
-                # for vector in bulk_extractor.buffer():
-                row, vector = bulk_extractor.queue.get()
-                while row is not None:
-                    predictions = sess.run(prediction, feed_dict={X: vector})
-                    for i in range(self.image.shape[1]):
-                        p = np.argmax(predictions[i])
-                        if predictions[i][p] >= self.threshold:
-                            class_name = self.classes[p]
-                            self.result[row, i] = self.colors[class_name]
-                    progress += 1
-                    self.progress.emit(progress)
-                    if row % 50 == 0:
-                        self.prep_update()
+                    progress = 0
+                    # for vector in bulk_extractor.buffer():
                     row, vector = bulk_extractor.queue.get()
-                    if self.stop:
-                        for p in bulk_extractor.processes:
-                            p.terminate()
-                        self.feedback.emit('Classifier', 'Classification interrupted.')
-                        bulk_extractor.queue = None
-                        return
-            self.feedback.emit('Classifier', 'Classification completed.')
-        self.prep_update()
+                    while row is not None:
+                        predictions = sess.run(prediction, feed_dict={X: vector})
+                        for i in range(self.image.shape[1]):
+                            p = np.argmax(predictions[i])
+                            if predictions[i][p] >= self.threshold:
+                                class_name = self.classes[p]
+                                self.result[row, i] = self.colors[class_name]
+                        progress += 1
+                        self.progress.emit(progress)
+                        if row % 50 == 0:
+                            self.prep_update()
+                        row, vector = bulk_extractor.queue.get()
+                        if self.stop:
+                            for p in bulk_extractor.processes:
+                                p.terminate()
+                            self.feedback.emit('Classifier', 'Classification interrupted.')
+                            bulk_extractor.queue = None
+                            return
+                self.feedback.emit('Classifier', 'Classification completed.')
+            self.prep_update()
+        else:
+            self.feedback.emit('Classifier', 'No model is loaded.')
 
     def relay_progress(self, value):
         self.progress.emit(value)

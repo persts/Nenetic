@@ -47,7 +47,10 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
         self.extractor = None
         self.trainer = None
-        self.classifier = None
+        self.classifier = Classifier()
+        self.classifier.feedback.connect(self.log)
+        self.classifier.update.connect(self.canvas.update_classified_image)
+        self.classifier.finished.connect(self.enable_action_buttons)
 
         self.progress_max = 0
         self.pushButtonExtract.clicked.connect(self.extract_training_data)
@@ -60,14 +63,14 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.pushButtonClassify.clicked.connect(self.classify_image)
         self.pushButtonSaveClassification.clicked.connect(self.save_classification)
         self.pushButtonStopClassification.clicked.connect(self.stop_classification)
-
+        self.pushButtonLoadClassification.clicked.connect(self.load_classification)
         self.checkBoxShowClassification.stateChanged.connect(self.show_classification)
         self.horizontalSliderOpacity.valueChanged.connect(self.canvas.set_opacity)
 
         self.canvas.image_loaded.connect(self.image_loaded)
 
     def classify_image(self):
-        if self.canvas.base_image is not None and self.classifier is not None:
+        if self.canvas.base_image is not None:
             self.checkBoxShowClassification.setChecked(True)
             array = np.array(self.canvas.base_image)
             self.progressBar.setValue(0)
@@ -132,6 +135,11 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
     def image_loaded(self, directory, image_name):
         self.checkBoxShowClassification.setChecked(False)
+
+    def load_classification(self):
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Load Classified Image', self.directory, 'JPG (*.jpg)')
+        if file_name[0] is not '':
+            self.classifier.load_classified_image(file_name[0])
 
     def load_model(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Model', self.directory, 'Model Metadata (*.meta)')
