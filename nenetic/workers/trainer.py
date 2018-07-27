@@ -28,6 +28,7 @@ import numpy as np
 import tensorflow as tf
 
 from PyQt5 import QtCore
+from tabulate import tabulate
 
 
 class Trainer(QtCore.QThread):
@@ -56,13 +57,25 @@ class Trainer(QtCore.QThread):
         self.n_input = len(self.training_data[0])
         self.n_classes = len(self.training_labels[0])
 
+    def confusion_matrix(self, predictions, labels):
+        m = np.zeros((len(self.classes), len(self.classes)))
+        for l, p in zip(labels, predictions):
+            m[np.argmax(l), np.argmax(p)] += 1
+        header = [''] + self.classes
+        data = []
+        for x in range(len(self.classes)):
+            data.append([self.classes[x]] + m[x].tolist())
+        return data, header
+
     def run(self):
-        self.log = "Epochs: {}\n".format(self.epochs)
-        self.log += "Learning Rate: {}\n".format(self.learning_rate)
-        self.log += "L1 Hidden Nodes: {}\n".format(self.l1_hidden_nodes)
-        self.log += "L2 Hidden Nodes: {}\n".format(self.l2_hidden_nodes)
-        self.log += "Batch Size: {}\n".format(self.batch_size)
-        self.log += "\n"
+        # Save the log file
+        log = open(os.path.join(self.directory, 'log.txt'), 'w')
+        log.write("Epochs: {}\n".format(self.epochs))
+        log.write("Learning Rate: {}\n".format(self.learning_rate))
+        log.write("L1 Hidden Nodes: {}\n".format(self.l1_hidden_nodes))
+        log.write("L2 Hidden Nodes: {}\n".format(self.l2_hidden_nodes))
+        log.write("Batch Size: {}\n".format(self.batch_size))
+        log.write("\n")
         X = tf.placeholder(tf.float32, [None, self.n_input])
         Y = tf.placeholder(tf.float32, [None, self.n_classes])
 
@@ -111,18 +124,35 @@ class Trainer(QtCore.QThread):
                 if epoch % 50 == 0:
                     message = 'Epoch: {} batch loss: {:.5f} batch acc: {:.3f}'.format(epoch, avg_loss, avg_acc)
                     self.feedback.emit('Train', message)
-                    self.log += message + "\n"
+                    log.write(message + "\n")
                 self.progress.emit(epoch + 1)
                 if self.stop:
                     self.feedback.emit('Train', 'Training interrupted.')
+                    log.write('Training interrupted.')
+                    log.close()
                     return
+
+            pred_train = sess.run(prediction, feed_dict={X: self.training_data})
+            pred_validation = sess.run(prediction, feed_dict={X: self.validation_data})
 
             message = "Train Acc: {:.5f}".format(sess.run(accuracy, feed_dict={X: self.training_data, Y: self.training_labels}))
             self.feedback.emit('Train', message)
-            self.log += "\n" + message + "\n"
+            log.write("\n" + message + "\n")
+
+            data, header = self.confusion_matrix(pred_train, self.training_labels)
+            output = tabulate(data, headers=header, tablefmt='orgtbl')
+            log.write("Training data confusion matrix\n")
+            log.write(output + "\n\n")
+
             message = "Validation Acc: {:.5f}".format(sess.run(accuracy, feed_dict={X: self.validation_data, Y: self.validation_labels}))
             self.feedback.emit('Train', message)
-            self.log += message + "\n"
+            log.write(message + "\n")
+
+            data, header = self.confusion_matrix(pred_validation, self.validation_labels)
+            output = tabulate(data, headers=header, tablefmt='orgtbl')
+            log.write("Training data confusion matrix\n")
+            log.write(output + "\n")
+            self.feedback.emit('Train', 'See log for confusion matrix')
 
             # Save the Model
             saver = tf.train.Saver()
@@ -134,7 +164,5 @@ class Trainer(QtCore.QThread):
             json.dump(package, file)
             file.close()
 
-            # Save the log file
-            file = open(os.path.join(self.directory, 'log.txt'), 'w')
-            file.write(self.log)
-            file.close()
+            # Close log file
+            log.close()

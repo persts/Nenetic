@@ -413,8 +413,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>315</width>
-        <height>316</height>
+        <width>382</width>
+        <height>399</height>
        </rect>
       </property>
       <attribute name="label">
@@ -581,13 +581,13 @@ p, li { white-space: pre-wrap; }
          <item>
           <widget class="QDoubleSpinBox" name="doubleSpinBoxLearningRate">
            <property name="decimals">
-            <number>3</number>
+            <number>5</number>
            </property>
            <property name="minimum">
-            <double>0.000000000000000</double>
+            <double>0.000010000000000</double>
            </property>
            <property name="maximum">
-            <double>0.100000000000000</double>
+            <double>0.500000000000000</double>
            </property>
            <property name="singleStep">
             <double>0.005000000000000</double>
@@ -760,8 +760,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>382</width>
-        <height>339</height>
+        <width>327</width>
+        <height>231</height>
        </rect>
       </property>
       <attribute name="label">
