@@ -34,15 +34,20 @@ class Extractor(QtCore.QThread):
     def __init__(self, extractor_name, packaged_points, file_name, directory, kwargs={}):
         QtCore.QThread.__init__(self)
         self.file_name = file_name
-        self.extractor = globals()[extractor_name](**kwargs)
-        self.extractor.progress.connect(self.pass_progress)
-        self.extractor.feedback.connect(self.pass_feedback)
-
-        self.extractor.load_points(packaged_points, directory)
+        self.extractor_name = extractor_name
+        self.kwargs = kwargs
+        self.directory = directory
+        self.points = packaged_points
 
     def run(self):
-        self.extractor.extract()
-        self.extractor.save(self.file_name)
+        extractor = globals()[self.extractor_name](**self.kwargs)
+        extractor.progress.connect(self.pass_progress)
+        extractor.feedback.connect(self.pass_feedback)
+        extractor.load_points(self.points, self.directory)
+
+        extractor.extract()
+        self.sleep(1)  # Sleep to let gui catch up
+        extractor.save(self.file_name)
 
     def pass_feedback(self, tool, message):
         self.feedback.emit(tool, message)

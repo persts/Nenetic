@@ -74,7 +74,6 @@ class Classifier(QtCore.QThread):
 
     def run(self):
         if self.model is not None:
-            print('here')
             self.feedback.emit('Classifier', 'Preparing extractor')
             bulk_extractor = BulkExtractor(self.extractor, self.image)
             bulk_extractor.progress.connect(self.relay_progress)
@@ -92,12 +91,18 @@ class Classifier(QtCore.QThread):
 
                     X = graph.get_tensor_by_name('Placeholder:0')
                     prediction = graph.get_tensor_by_name('prediction:0')
-
+                    keep_prob = None
+                    if self.extractor.type == 'raster':
+                        keep_prob = graph.get_tensor_by_name('keep_prob:0')
                     progress = 0
                     # for vector in bulk_extractor.buffer():
                     row, vector = bulk_extractor.queue.get()
+                    predictions = None
                     while row is not None:
-                        predictions = sess.run(prediction, feed_dict={X: vector})
+                        if self.extractor.type == 'raster':
+                            predictions = sess.run(prediction, feed_dict={X: vector, keep_prob: 1.0})
+                        else:
+                            predictions = sess.run(prediction, feed_dict={X: vector})
                         for i in range(self.image.shape[1]):
                             p = np.argmax(predictions[i])
                             if predictions[i][p] >= self.threshold:

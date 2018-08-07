@@ -31,11 +31,11 @@ from random import shuffle
 from PIL import Image
 
 
-class Vector(QtCore.QObject):
+class Region(QtCore.QObject):
     progress = QtCore.pyqtSignal(int)
     feedback = QtCore.pyqtSignal(str, str)
 
-    def __init__(self):
+    def __init__(self, pad=15):
         QtCore.QObject.__init__(self)
         self.classes = []
         self.points = {}
@@ -44,12 +44,14 @@ class Vector(QtCore.QObject):
         self.labels = []
         self.colors = {}
 
-        self.stack = []
+        self.pad = pad
+        self.padded = None
 
-        self.type = 'vector'
-        self.name = ''
-        self.kwargs = {}
         self.max_value = 255
+
+        self.type = 'raster'
+        self.name = 'Region'
+        self.kwargs = {'pad': pad}
 
     def load(self, file_name):
         self.directory = os.path.split(file_name)[0]
@@ -62,11 +64,7 @@ class Vector(QtCore.QObject):
         if directory is not None:
             self.directory = directory
         self.classes = packaged_points['classes']
-        if 'images' in packaged_points:
-            # Backward compatibility
-            self.points = packaged_points['images']
-        else:
-            self.points = packaged_points['points']
+        self.points = packaged_points['points']
         self.colors = packaged_points['colors']
 
     def extract(self):
@@ -89,36 +87,36 @@ class Vector(QtCore.QObject):
                 label[self.classes.index(class_name)] = 1
                 points = self.points[image][class_name]
                 for point in points:
-                    vector = self.extract_value(int(point['x']), int(point['y']))
+                    vector = self.extract_region(int(point['x']), int(point['y']))
                     self.data.append(vector)
                     self.labels.append(label)
                     progress += 1
                     self.progress.emit(progress)
 
     def extract_row(self, row):
-        if len(self.stack) > 0:
-            cols = self.stack[0].shape[1]
-            vector = np.array(None)
-            for i in range(cols):
-                entry = np.array([self.extract_value(i, row)])
-                if vector.shape == ():
-                    vector = entry
-                else:
-                    vector = np.vstack((vector, entry))
+        if self.padded is not None:
+            cols = self.padded.shape[1] - (self.pad * 2)
+            vector = np.array([self.extract_region(0, row)])
+            for i in range(1, cols):
+                entry = np.array([self.extract_region(i, row)])
+                vector = np.vstack((vector, entry))
             return vector
 
-    def extract_value(self, x, y):
-        vector = []
-        for image in self.stack:
-            vector += image[y, x].tolist()
-        return vector
+    def extract_region(self, x, y):
+        X = x + (2 * self.pad) + 1
+        Y = y + (2 * self.pad) + 1
+        return self.padded[y:Y, x:X]
 
     def preprocess(self, image):
-        self.stack = [image / self.max_value]
+        self.padded = np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
 
     def save(self, file_name):
         self.feedback.emit('Extractor', 'Preparing to save data.')
         self.shuffle()
+        data = []
+        self.feedback.emit('Extractor', 'Converting image arrays to lists.')
+        for entry in self.data:
+            data.append(entry.tolist())
         package = {'classes': self.classes, 'labels': self.labels, 'data': data, 'colors': self.colors, 'extractor': {'name': self.name, 'type': self.type, 'kwargs': self.kwargs}}
         self.feedback.emit('Extractor', 'Writing to disk...')
         file = open(file_name, 'w')

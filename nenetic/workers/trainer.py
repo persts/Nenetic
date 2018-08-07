@@ -31,7 +31,7 @@ from PyQt5 import QtCore
 from tabulate import tabulate
 
 
-class Trainer(QtCore.QThread):
+class FcTrainer(QtCore.QThread):
     progress = QtCore.pyqtSignal(int)
     feedback = QtCore.pyqtSignal(str, str)
 
@@ -58,14 +58,19 @@ class Trainer(QtCore.QThread):
         self.n_classes = len(self.training_labels[0])
 
     def confusion_matrix(self, predictions, labels):
-        m = np.zeros((len(self.classes), len(self.classes)))
-        for l, p in zip(labels, predictions):
-            m[np.argmax(l), np.argmax(p)] += 1
+        matrix = np.zeros((len(self.classes), len(self.classes)))
+        for label, prediction in zip(labels, predictions):
+            matrix[np.argmax(label), np.argmax(prediction)] += 1
         header = [''] + self.classes
         data = []
         for x in range(len(self.classes)):
-            data.append([self.classes[x]] + m[x].tolist())
+            data.append([self.classes[x]] + matrix[x].tolist())
         return data, header
+
+    def fc(self, x, length):
+        W = tf.Variable(tf.truncated_normal([x.shape[1].value, length], stddev=0.1))
+        b = tf.Variable(tf.truncated_normal([length], stddev=0.1))
+        return tf.matmul(x, W) + b
 
     def run(self):
         # Save the log file
@@ -79,28 +84,19 @@ class Trainer(QtCore.QThread):
         X = tf.placeholder(tf.float32, [None, self.n_input])
         Y = tf.placeholder(tf.float32, [None, self.n_classes])
 
-        W1 = tf.Variable(tf.random_normal([self.n_input, self.l1_hidden_nodes], stddev=0.03), name='W1')
-        b1 = tf.Variable(tf.random_normal([self.l1_hidden_nodes]), name='b1')
-
-        W2 = tf.Variable(tf.random_normal([self.l1_hidden_nodes, self.l2_hidden_nodes], stddev=0.03), name='W2')
-        b2 = tf.Variable(tf.random_normal([self.l2_hidden_nodes]), name='b2')
-
-        W_out = tf.Variable(tf.random_normal([self.l2_hidden_nodes, self.n_classes], stddev=0.03), name='W_out')
-        b_out = tf.Variable(tf.random_normal([self.n_classes]), name='b_out')
-
-        layer_1 = tf.add(tf.matmul(X, W1), b1)
-        layer_2 = tf.add(tf.matmul(layer_1, W2), b2)
-        layer_out = tf.matmul(layer_2, W_out) + b_out
+        layer_1 = tf.nn.relu(self.fc(X, self.l1_hidden_nodes))
+        layer_2 = tf.nn.relu(self.fc(layer_1, self.l2_hidden_nodes))
+        layer_out = self.fc(layer_2, self.n_classes)
 
         logits = layer_out
         prediction = tf.nn.softmax(logits, name='prediction')
 
-        loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=logits, labels=Y))
+        loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=Y))
         optimizer = tf.train.AdamOptimizer(learning_rate=self.learning_rate)
         train_op = optimizer.minimize(loss_op)
 
-        correct_pred = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+        correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
+        accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
         init_op = tf.global_variables_initializer()
 
@@ -121,16 +117,15 @@ class Trainer(QtCore.QThread):
                     if epoch % 50 == 0:
                         avg_loss += loss / total_batch
                         avg_acc += acc / total_batch
-                if epoch % 50 == 0:
-                    message = 'Epoch: {} batch loss: {:.5f} batch acc: {:.3f}'.format(epoch, avg_loss, avg_acc)
+                if epoch % 100 == 0:
+                    message = 'Epoch: {} Batch [loss: {:.4f}  acc: {:.3f}]'.format(epoch, avg_loss, avg_acc)
                     self.feedback.emit('Train', message)
                     log.write(message + "\n")
                 self.progress.emit(epoch + 1)
                 if self.stop:
                     self.feedback.emit('Train', 'Training interrupted.')
                     log.write('Training interrupted.')
-                    log.close()
-                    return
+                    break
 
             pred_train = sess.run(prediction, feed_dict={X: self.training_data})
             pred_validation = sess.run(prediction, feed_dict={X: self.validation_data})

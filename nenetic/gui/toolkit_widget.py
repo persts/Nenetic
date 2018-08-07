@@ -29,7 +29,8 @@ import numpy as np
 from PyQt5 import QtWidgets, uic
 
 from nenetic.workers import Extractor
-from nenetic.workers import Trainer
+from nenetic.workers import FcTrainer
+from nenetic.workers import ConvTrainer
 from nenetic.workers import Classifier
 
 
@@ -46,7 +47,8 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.directory = None
 
         self.extractor = None
-        self.trainer = None
+        self.fc_trainer = None
+        self.conv_trainer = None
         self.classifier = Classifier()
         self.classifier.feedback.connect(self.log)
         self.classifier.update.connect(self.canvas.update_classified_image)
@@ -55,9 +57,13 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.progress_max = 0
         self.pushButtonExtract.clicked.connect(self.extract_training_data)
 
-        self.pushButtonTrainingData.clicked.connect(self.load_training_data)
-        self.pushButtonTrainModel.clicked.connect(self.train_model)
-        self.pushButtonStopTraining.clicked.connect(self.stop_training)
+        self.pushButtonFcTrainingData.clicked.connect(self.load_fc_training_data)
+        self.pushButtonTrainFcModel.clicked.connect(self.train_fc_model)
+        self.pushButtonStopFcTraining.clicked.connect(self.stop_fc_training)
+
+        self.pushButtonConvTrainingData.clicked.connect(self.load_conv_training_data)
+        self.pushButtonTrainConvModel.clicked.connect(self.train_conv_model)
+        self.pushButtonStopConvTraining.clicked.connect(self.stop_conv_training)
 
         self.pushButtonLoadModel.clicked.connect(self.load_model)
         self.pushButtonClassify.clicked.connect(self.classify_image)
@@ -83,8 +89,10 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
     def disable_action_buttons(self):
         self.pushButtonExtract.setEnabled(False)
-        self.pushButtonTrainingData.setEnabled(False)
-        self.pushButtonTrainModel.setEnabled(False)
+        self.pushButtonFcTrainingData.setEnabled(False)
+        self.pushButtonTrainFcModel.setEnabled(False)
+        self.pushButtonConvTrainingData.setEnabled(False)
+        self.pushButtonTrainConvModel.setEnabled(False)
 
         self.pushButtonClassify.setEnabled(False)
         self.pushButtonSaveClassification.setEnabled(False)
@@ -92,14 +100,17 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
     def enable_action_buttons(self):
         self.pushButtonExtract.setEnabled(True)
-        self.pushButtonTrainingData.setEnabled(True)
-        self.pushButtonTrainModel.setEnabled(True)
+        self.pushButtonFcTrainingData.setEnabled(True)
+        self.pushButtonTrainFcModel.setEnabled(True)
+        self.pushButtonConvTrainingData.setEnabled(True)
+        self.pushButtonTrainConvModel.setEnabled(True)
 
         self.pushButtonClassify.setEnabled(True)
         self.pushButtonSaveClassification.setEnabled(True)
         self.pushButtonLoadModel.setEnabled(True)
 
-        self.pushButtonStopTraining.setEnabled(False)
+        self.pushButtonStopFcTraining.setEnabled(False)
+        self.pushButtonStopConvTraining.setEnabled(False)
         self.pushButtonStopClassification.setEnabled(False)
         self.classifier.stop = False
 
@@ -126,6 +137,8 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 kwargs['pad'] = self.spinBoxNeighborhood.value() // 2
             elif extractor_name == 'Index':
                 kwargs['pad'] = self.spinBoxNeighborhood2.value() // 2
+            elif extractor_name == 'Region':
+                kwargs['pad'] = self.spinBoxRegionSize.value() // 2
 
             self.extractor = Extractor(extractor_name, package, file_name[0], self.directory, kwargs)
             self.extractor.progress.connect(self.update_progress)
@@ -150,18 +163,53 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
             self.classifier.update.connect(self.canvas.update_classified_image)
             self.classifier.finished.connect(self.enable_action_buttons)
 
-    def load_training_data(self):
+    def load_conv_training_data(self):
+        self.log('Trainer', 'Loading training data...')
+        self.progressBar.setValue(0)
+        self.progressBar.setRange(0, 0)
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Training Data', self.directory, 'Point Files (*.json)')
         if file_name[0] is not '':
             file = open(file_name[0], 'r')
             self.training_data = json.load(file)
             file.close()
-            total_points = len(self.training_data['data'])
-            vector_length = len(self.training_data['data'][0])
-            num_classes = len(self.training_data['labels'][0])
-            self.labelVectorLength.setText("{}".format(vector_length))
-            self.labelNumberClasses.setText("{}".format(num_classes))
-            self.labelTotalPoints.setText("{}".format(total_points))
+            self.log('Trainer', 'Done.')
+            if 'type' in self.training_data['extractor'] and self.training_data['extractor']['type'] == 'raster':
+                array = np.array(self.training_data['data'][0])
+                total_points = len(self.training_data['data'])
+                image_size = array.shape
+                num_classes = len(self.training_data['labels'][0])
+                self.labelImageSize.setText("({}, {}, {})".format(image_size[0], image_size[1], image_size[2]))
+                self.labelNumberClassesConv.setText("{}".format(num_classes))
+                self.labelTotalPointsConv.setText("{}".format(total_points))
+            else:
+                self.training_data = None
+                self.log('Trainer', 'Wrong training data, format is vector.')
+                self.labelImageSize.setText("0")
+                self.labelNumberClassesConv.setText("0")
+                self.labelTotalPointsConv.setText("0")
+        else:
+            self.log('Trainer', 'Canceled.')
+        self.progressBar.setRange(0, 1)
+
+    def load_fc_training_data(self):
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Training Data', self.directory, 'Point Files (*.json)')
+        if file_name[0] is not '':
+            file = open(file_name[0], 'r')
+            self.training_data = json.load(file)
+            file.close()
+            if 'type' in self.training_data['extractor'] and self.training_data['extractor']['type'] == 'raster':
+                self.training_data = None
+                self.log('Trainer', 'Wrong training data, format is raster.')
+                self.labelVectorLength.setText("0")
+                self.labelNumberClasses.setText("0")
+                self.labelTotalPoints.setText("0")
+            else:
+                total_points = len(self.training_data['data'])
+                vector_length = len(self.training_data['data'][0])
+                num_classes = len(self.training_data['labels'][0])
+                self.labelVectorLength.setText("{}".format(vector_length))
+                self.labelNumberClasses.setText("{}".format(num_classes))
+                self.labelTotalPoints.setText("{}".format(total_points))
 
     def log(self, tool, message):
         text = "[{}]({}) {}".format(time.strftime('%H:%M:%S'), tool, message)
@@ -179,10 +227,34 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
     def stop_classification(self):
         self.classifier.stop = True
 
-    def stop_training(self):
-        self.trainer.stop = True
+    def stop_conv_training(self):
+        self.conv_trainer.stop = True
 
-    def train_model(self):
+    def stop_fc_training(self):
+        self.fc_trainer.stop = True
+
+    def train_conv_model(self):
+        if self.training_data is not None:
+            directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Save Model To Directory', self.directory)
+            if directory != '':
+                params = {}
+                params['epochs'] = self.spinBoxEpochsConv.value()
+                params['learning_rate'] = self.doubleSpinBoxLearningRateConv.value()
+                params['model'] = self.textBrowserConvModel.toPlainText()
+                params['fc_size'] = self.spinBoxFinalLayerConv.value()
+                params['validation_split'] = self.doubleSpinBoxSplitConv.value()
+                self.conv_trainer = ConvTrainer(self.training_data, directory, params)
+
+                self.progressBar.setValue(0)
+                self.progressBar.setRange(0, self.spinBoxEpochsConv.value())
+                self.conv_trainer.progress.connect(self.update_progress)
+                self.conv_trainer.feedback.connect(self.log)
+                self.conv_trainer.finished.connect(self.enable_action_buttons)
+                self.pushButtonStopConvTraining.setEnabled(True)
+                self.disable_action_buttons()
+                self.conv_trainer.start()
+
+    def train_fc_model(self):
         if self.training_data is not None:
             directory = QtWidgets.QFileDialog.getExistingDirectory(self, 'Save Model To Directory', self.directory)
             if directory != '':
@@ -192,16 +264,16 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 params['l1_hidden_nodes'] = self.spinBoxL1.value()
                 params['l2_hidden_nodes'] = self.spinBoxL2.value()
                 params['validation_split'] = self.doubleSpinBoxSplit.value()
-                self.trainer = Trainer(self.training_data, directory, params)
+                self.fc_trainer = FcTrainer(self.training_data, directory, params)
 
                 self.progressBar.setValue(0)
                 self.progressBar.setRange(0, self.spinBoxEpochs.value())
-                self.trainer.progress.connect(self.update_progress)
-                self.trainer.feedback.connect(self.log)
-                self.trainer.finished.connect(self.enable_action_buttons)
-                self.pushButtonStopTraining.setEnabled(True)
+                self.fc_trainer.progress.connect(self.update_progress)
+                self.fc_trainer.feedback.connect(self.log)
+                self.fc_trainer.finished.connect(self.enable_action_buttons)
+                self.pushButtonStopFcTraining.setEnabled(True)
                 self.disable_action_buttons()
-                self.trainer.start()
+                self.fc_trainer.start()
 
     def update_progress(self, value):
         if self.progressBar.minimum() == self.progressBar.maximum():
