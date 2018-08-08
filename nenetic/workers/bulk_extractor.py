@@ -22,6 +22,7 @@
 # along with with this software.  If not, see <http://www.gnu.org/licenses/>.
 #
 # --------------------------------------------------------------------------
+import time
 from PyQt5 import QtCore
 from multiprocessing import Process, Queue, cpu_count
 
@@ -34,7 +35,6 @@ class BulkExtractor(QtCore.QThread):
         self.image = image
         self.extractor = extractor
         self.extractor.preprocess(self.image)
-        self.vectors = [x for x in range(self.image.shape[0])]
 
         self.queue = Queue()
         self.processes = []
@@ -49,7 +49,9 @@ class BulkExtractor(QtCore.QThread):
         for row in rows:
             self.queue.put([row, self.extractor.extract_row(row)])
             count += 1
-        # self.queue.put([None, None])
+            if count % 10 == 0:
+                while self.queue.qsize() > 100:
+                    time.sleep(5)
         return True
 
     def run(self):
@@ -61,19 +63,3 @@ class BulkExtractor(QtCore.QThread):
 
         if self.queue is not None:
             self.queue.put([None, None])
-        '''
-        progress = 0
-        terminate = 0
-        while terminate < self.threads:
-            row, vector = self.queue.get()
-            if row is None:
-                terminate += 1
-            else:
-                progress += 1
-                self.vectors[row] = vector
-                self.progress.emit(progress)
-        '''
-
-    def buffer(self):
-        for vector in self.vectors:
-            yield vector

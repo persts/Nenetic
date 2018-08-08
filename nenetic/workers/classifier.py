@@ -74,14 +74,14 @@ class Classifier(QtCore.QThread):
 
     def run(self):
         if self.model is not None:
-            self.feedback.emit('Classifier', 'Preparing extractor')
+            self.feedback.emit('Classifier', 'Preparing extractors')
             bulk_extractor = BulkExtractor(self.extractor, self.image)
             bulk_extractor.progress.connect(self.relay_progress)
             bulk_extractor.start()
-            # self.feedback.emit('Classifier', 'Bulk extracting vectors')
-            # while(bulk_extractor.isRunning()):
-            #    self.sleep(1)
             self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
+            self.feedback.emit('Classifier', 'Populating queue')
+            while bulk_extractor.queue.qsize() < 100:
+                self.sleep(2)
             self.feedback.emit('Classifier', 'Classifying...')
             graph = tf.Graph()
             with graph.as_default():
@@ -95,7 +95,6 @@ class Classifier(QtCore.QThread):
                     if self.extractor.type == 'raster':
                         keep_prob = graph.get_tensor_by_name('keep_prob:0')
                     progress = 0
-                    # for vector in bulk_extractor.buffer():
                     row, vector = bulk_extractor.queue.get()
                     predictions = None
                     while row is not None:
@@ -110,15 +109,16 @@ class Classifier(QtCore.QThread):
                                 self.result[row, i] = self.colors[class_name]
                         progress += 1
                         self.progress.emit(progress)
-                        if row % 50 == 0:
+                        if row % 20 == 0:
                             self.prep_update()
+                        print("Classifier", bulk_extractor.queue.qsize())
                         row, vector = bulk_extractor.queue.get()
                         if self.stop:
                             for p in bulk_extractor.processes:
                                 p.terminate()
                             self.feedback.emit('Classifier', 'Classification interrupted.')
                             bulk_extractor.queue = None
-                            return
+                            break
                 self.feedback.emit('Classifier', 'Classification completed.')
             self.prep_update()
         else:

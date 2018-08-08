@@ -44,7 +44,7 @@ class Vector(QtCore.QObject):
         self.labels = []
         self.colors = {}
 
-        self.stack = []
+        self.stack = None
 
         self.type = 'vector'
         self.name = ''
@@ -96,22 +96,21 @@ class Vector(QtCore.QObject):
                     self.progress.emit(progress)
 
     def extract_row(self, row):
-        if len(self.stack) > 0:
-            cols = self.stack[0].shape[1]
-            vector = np.array(None)
-            for i in range(cols):
-                entry = np.array([self.extract_value(i, row)])
-                if vector.shape == ():
-                    vector = entry
-                else:
-                    vector = np.vstack((vector, entry))
+        if self.stack is not None:
+            array = np.array
+            vstack = np.vstack
+            cols = self.stack.shape[1]
+            vector = np.array([self.extract_value(0, row)])
+            for i in range(1, cols):
+                entry = array([self.extract_value(i, row)])
+                vector = vstack((vector, entry))
             return vector
 
     def extract_value(self, x, y):
-        vector = []
-        for image in self.stack:
-            vector += image[y, x].tolist()
-        return vector
+        return self.stack[y, x].tolist()
+
+    def extract_region(self, x, y):
+        return self.extract_value(x, y)
 
     def preprocess(self, image):
         self.stack = [image / self.max_value]
@@ -119,7 +118,7 @@ class Vector(QtCore.QObject):
     def save(self, file_name):
         self.feedback.emit('Extractor', 'Preparing to save data.')
         self.shuffle()
-        package = {'classes': self.classes, 'labels': self.labels, 'data': data, 'colors': self.colors, 'extractor': {'name': self.name, 'type': self.type, 'kwargs': self.kwargs}}
+        package = {'classes': self.classes, 'labels': self.labels, 'data': self.data, 'colors': self.colors, 'extractor': {'name': self.name, 'type': self.type, 'kwargs': self.kwargs}}
         self.feedback.emit('Extractor', 'Writing to disk...')
         file = open(file_name, 'w')
         json.dump(package, file)

@@ -182,10 +182,16 @@ class ConvTrainer(QtCore.QThread):
                 batch_x.append(np.array(self.training_data[self.batch_size * i:self.batch_size * (i + 1)]))
                 batch_y.append(np.array(self.training_labels[self.batch_size * i:self.batch_size * (i + 1)]))
             for epoch in range(self.epochs):
+                avg_loss = 0
+                avg_acc = 0
                 for b in range(total_batch):
                     train_op.run(feed_dict={X: batch_x[b], Y: batch_y[b], keep_prob: 0.5})
-                loss, train_accuracy = sess.run([loss_op, accuracy], feed_dict={X: self.training_data, Y: self.training_labels, keep_prob: 1.0})
-                message = "Epoch {} loss: {:.4f} accuracy: {:.3f}".format(epoch, loss, train_accuracy)
+                    loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x[i], Y: batch_y[i], keep_prob: 1.0})
+                    avg_loss += loss / total_batch
+                    avg_acc += acc / total_batch
+                # loss, train_accuracy = sess.run([loss_op, accuracy], feed_dict={X: self.training_data, Y: self.training_labels, keep_prob: 1.0})
+                # message = "Epoch {} loss: {:.4f} accuracy: {:.3f}".format(epoch, loss, train_accuracy)
+                message = 'Epoch: {} Avg Batch [loss: {:.4f}  acc: {:.3f}]'.format(epoch, avg_loss, avg_acc)
                 self.feedback.emit('Train', message)
                 log.write(message + "\n")
 

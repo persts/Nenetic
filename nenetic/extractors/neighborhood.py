@@ -36,21 +36,23 @@ class Neighborhood(Vector):
         self.kwargs = {'pad': pad}
 
     def extract_row(self, row):
-        if len(self.stack) > 0:
-            cols = self.stack[0].shape[1] - (self.pad * 2)
-            vector = np.array([self.extract_value(0, row)])
+        if self.stack is not None:
+            array = np.array
+            vstack = np.vstack
+            cols = self.stack.shape[1] - (self.pad * 2)
+            vector = array([self.extract_region(0, row)])
             for i in range(1, cols):
-                entry = np.array([self.extract_value(i, row)])
-                vector = np.vstack((vector, entry))
+                entry = array([self.extract_region(i, row)])
+                vector = vstack((vector, entry))
             return vector
 
     def extract_value(self, x, y):
-        vector = []
+        return self.extract_region(x, y)
+
+    def extract_region(self, x, y):
         X = x + (2 * self.pad) + 1
         Y = y + (2 * self.pad) + 1
-        for image in self.stack:
-            vector += image[y:Y, x:X].flatten().tolist()
-        return vector
+        return self.stack[y:Y, x:X].flatten().tolist()
 
     def preprocess(self, image):
-        self.stack = [np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value]
+        self.stack = np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value

@@ -113,12 +113,12 @@ class FcTrainer(QtCore.QThread):
                 avg_acc = 0
                 for i in range(total_batch):
                     sess.run([train_op], feed_dict={X: batch_x[i], Y: batch_y[i]})
-                    loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x[i], Y: batch_y[i]})
-                    if epoch % 50 == 0:
+                    if epoch % 100 == 0:
+                        loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x[i], Y: batch_y[i]})
                         avg_loss += loss / total_batch
                         avg_acc += acc / total_batch
                 if epoch % 100 == 0:
-                    message = 'Epoch: {} Batch [loss: {:.4f}  acc: {:.3f}]'.format(epoch, avg_loss, avg_acc)
+                    message = 'Epoch: {} Avg Batch [loss: {:.4f}  acc: {:.3f}]'.format(epoch, avg_loss, avg_acc)
                     self.feedback.emit('Train', message)
                     log.write(message + "\n")
                 self.progress.emit(epoch + 1)

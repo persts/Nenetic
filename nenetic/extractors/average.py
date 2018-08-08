@@ -40,10 +40,11 @@ class Average(Vector):
             kernel = np.ones((size, size))
             if not solid_kernel:
                 kernel[1:size - 1, 1:size - 1] = 0
+            kernel = kernel / np.sum(kernel)
             self.kernels.append(kernel)
 
     def preprocess(self, image):
-        self.stack = [image / self.max_value]
+        self.stack = image / self.max_value
         for kernel in self.kernels:
             bands = []
             for band in range(image.shape[2]):
@@ -51,4 +52,4 @@ class Average(Vector):
                 bands.append(b)
             img = np.dstack(bands)
             img = img / self.max_value
-            self.stack.append(img)
+            self.stack = np.dstack((self.stack, img))

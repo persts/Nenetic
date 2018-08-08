@@ -22,93 +22,64 @@
 # along with with this software.  If not, see <http://www.gnu.org/licenses/>.
 #
 # --------------------------------------------------------------------------
-import os
 import json
 import numpy as np
-
-from PyQt5 import QtCore
-from random import shuffle
-from PIL import Image
+from nenetic.extractors import Neighborhood
 
 
-class Region(QtCore.QObject):
-    progress = QtCore.pyqtSignal(int)
-    feedback = QtCore.pyqtSignal(str, str)
-
-    def __init__(self, pad=15):
-        QtCore.QObject.__init__(self)
-        self.classes = []
-        self.points = {}
-        self.directory = ''
-        self.data = []
-        self.labels = []
-        self.colors = {}
+class Region(Neighborhood):
+    def __init__(self, pad=25, include_index=False):
+        Neighborhood.__init__(self)
 
         self.pad = pad
-        self.padded = None
-
-        self.max_value = 255
+        self.include_index = include_index
 
         self.type = 'raster'
         self.name = 'Region'
-        self.kwargs = {'pad': pad}
-
-    def load(self, file_name):
-        self.directory = os.path.split(file_name)[0]
-        file = open(file_name, 'r')
-        points = json.load(file)
-        file.close()
-        self.load_points(points)
-
-    def load_points(self, packaged_points, directory=None):
-        if directory is not None:
-            self.directory = directory
-        self.classes = packaged_points['classes']
-        self.points = packaged_points['points']
-        self.colors = packaged_points['colors']
-
-    def extract(self):
-        self.data = []
-        self.labels = []
-        progress = 0
-        for image in self.points:
-            try:
-                img = Image.open(os.path.join(self.directory, image))
-            except OSError as e:
-                self.feedback.emit('Extractor', image + ' could not be opened, skipping...')
-                break
-            array = np.array(img)
-            img.close()
-            self.feedback.emit('Extractor', 'Preprocessing image -> {}'.format(image))
-            self.preprocess(array)
-            self.feedback.emit('Extractor', 'Extacting points')
-            for class_name in self.points[image]:
-                label = [0] * len(self.classes)
-                label[self.classes.index(class_name)] = 1
-                points = self.points[image][class_name]
-                for point in points:
-                    vector = self.extract_region(int(point['x']), int(point['y']))
-                    self.data.append(vector)
-                    self.labels.append(label)
-                    progress += 1
-                    self.progress.emit(progress)
-
-    def extract_row(self, row):
-        if self.padded is not None:
-            cols = self.padded.shape[1] - (self.pad * 2)
-            vector = np.array([self.extract_region(0, row)])
-            for i in range(1, cols):
-                entry = np.array([self.extract_region(i, row)])
-                vector = np.vstack((vector, entry))
-            return vector
+        self.kwargs = {'pad': pad, 'include_index': include_index}
 
     def extract_region(self, x, y):
         X = x + (2 * self.pad) + 1
         Y = y + (2 * self.pad) + 1
-        return self.padded[y:Y, x:X]
+        return self.stack[y:Y, x:X]
 
     def preprocess(self, image):
-        self.padded = np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
+        stack = np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value
+        if self.include_index:
+            img = np.int32(image)
+            bands = np.split(img, img.shape[2], axis=2)
+            denom = np.clip(bands[1] + bands[0], 1, None)
+            vndvi = (((bands[1] - bands[0]) / denom) + 1) / 2
+            new_layer = np.pad(vndvi, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
+            stack = np.dstack((stack, new_layer))
+
+            denom = np.clip(2 * bands[1] + bands[0] + bands[2], 1, None)
+            gli = (((2 * bands[1] - bands[0] - bands[2]) / denom) + 1) / 2
+            new_layer = np.pad(gli, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
+            stack = np.dstack((stack, new_layer))
+
+            denom = np.clip(bands[1] + bands[0] - bands[2], 1, None)
+            vari = (((bands[1] - bands[0]) / denom) + 1) / 2
+            new_layer = np.pad(vari, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
+            stack = np.dstack((stack, new_layer))
+
+            average = ((bands[0] + bands[1] + bands[2]) / 3) / self.max_value
+            new_layer = np.pad(average, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
+            stack = np.dstack((stack, new_layer))
+
+            luminosity = (0.21 * bands[0] + 0.72 * bands[1] + 0.07 * bands[2]) / self.max_value
+            new_layer = np.pad(luminosity, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
+            stack = np.dstack((stack, new_layer))
+
+            maximum = np.maximum(bands[0], bands[1])
+            maximum = np.maximum(maximum, bands[2])
+            minimum = np.minimum(bands[0], bands[1])
+            minimum = np.minimum(minimum, bands[2])
+            lightness = ((maximum + minimum) / 2) / self.max_value
+            new_layer = np.pad(lightness, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
+            stack = np.dstack((stack, new_layer))
+
+        self.stack = stack
 
     def save(self, file_name):
         self.feedback.emit('Extractor', 'Preparing to save data.')
@@ -123,14 +94,3 @@ class Region(QtCore.QObject):
         json.dump(package, file)
         file.close()
         self.feedback.emit('Extractor', 'Done.')
-
-    def shuffle(self):
-        shuffle_index = [x for x in range(len(self.data))]
-        shuffle(shuffle_index)
-        data = [0] * len(self.data)
-        labels = [0] * len(self.data)
-        for i in range(len(self.data)):
-            data[i] = self.data[shuffle_index[i]]
-            labels[i] = self.labels[shuffle_index[i]]
-        self.data = data
-        self.labels = labels
