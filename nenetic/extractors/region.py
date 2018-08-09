@@ -28,15 +28,15 @@ from nenetic.extractors import Neighborhood
 
 
 class Region(Neighborhood):
-    def __init__(self, pad=25, include_index=False):
+    def __init__(self, pad=25, include_indices=False):
         Neighborhood.__init__(self)
 
         self.pad = pad
-        self.include_index = include_index
+        self.include_indices = include_indices
 
         self.type = 'raster'
         self.name = 'Region'
-        self.kwargs = {'pad': pad, 'include_index': include_index}
+        self.kwargs = {'pad': pad, 'include_indices': include_indices}
 
     def extract_region(self, x, y):
         X = x + (2 * self.pad) + 1
@@ -45,7 +45,7 @@ class Region(Neighborhood):
 
     def preprocess(self, image):
         stack = np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value
-        if self.include_index:
+        if self.include_indices:
             img = np.int32(image)
             bands = np.split(img, img.shape[2], axis=2)
             denom = np.clip(bands[1] + bands[0], 1, None)

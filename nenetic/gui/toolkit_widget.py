@@ -139,6 +139,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 kwargs['pad'] = self.spinBoxNeighborhood2.value() // 2
             elif extractor_name == 'Region':
                 kwargs['pad'] = self.spinBoxRegionSize.value() // 2
+                kwargs['include_indices'] = self.checkBoxIncludeIndices.isChecked()
 
             self.extractor = Extractor(extractor_name, package, file_name[0], self.directory, kwargs)
             self.extractor.progress.connect(self.update_progress)
@@ -240,6 +241,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 params = {}
                 params['epochs'] = self.spinBoxEpochsConv.value()
                 params['learning_rate'] = self.doubleSpinBoxLearningRateConv.value()
+                params['batch_size'] = self.spinBoxBatchSizeConv.value()
                 params['model'] = self.textBrowserConvModel.toPlainText()
                 params['fc_size'] = self.spinBoxFinalLayerConv.value()
                 params['validation_split'] = self.doubleSpinBoxSplitConv.value()
@@ -261,6 +263,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 params = {}
                 params['epochs'] = self.spinBoxEpochs.value()
                 params['learning_rate'] = self.doubleSpinBoxLearningRate.value()
+                params['batch_size'] = self.spinBoxBatchSize.value()
                 params['l1_hidden_nodes'] = self.spinBoxL1.value()
                 params['l2_hidden_nodes'] = self.spinBoxL2.value()
                 params['validation_split'] = self.doubleSpinBoxSplit.value()

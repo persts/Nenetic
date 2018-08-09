@@ -45,7 +45,7 @@ class ConvTrainer(QtCore.QThread):
         self.learning_rate = model_parameters['learning_rate']
         self.final_layer_size = model_parameters['fc_size']
         self.model_definition = model_parameters['model']
-        self.batch_size = 64
+        self.batch_size = model_parameters['batch_size']
 
         self.directory = directory
 
@@ -189,8 +189,6 @@ class ConvTrainer(QtCore.QThread):
                     loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x[i], Y: batch_y[i], keep_prob: 1.0})
                     avg_loss += loss / total_batch
                     avg_acc += acc / total_batch
-                # loss, train_accuracy = sess.run([loss_op, accuracy], feed_dict={X: self.training_data, Y: self.training_labels, keep_prob: 1.0})
-                # message = "Epoch {} loss: {:.4f} accuracy: {:.3f}".format(epoch, loss, train_accuracy)
                 message = 'Epoch: {} Avg Batch [loss: {:.4f}  acc: {:.3f}]'.format(epoch, avg_loss, avg_acc)
                 self.feedback.emit('Train', message)
                 log.write(message + "\n")
@@ -201,10 +199,16 @@ class ConvTrainer(QtCore.QThread):
                     log.write("Training interrupted.\n")
                     break
 
-            pred_train = sess.run(prediction, feed_dict={X: self.training_data, keep_prob: 1.0})
-            pred_validation = sess.run(prediction, feed_dict={X: self.validation_data, keep_prob: 1.0})
+            pred_train = sess.run(prediction, feed_dict={X: batch_x[0], keep_prob: 1.0})
+            for b in range(1, total_batch):
+                pred_train = np.concatenate((pred_train, sess.run(prediction, feed_dict={X: batch_x[b], keep_prob: 1.0})), axis=0)
 
-            message = "Train Acc: {:.5f}".format(sess.run(accuracy, feed_dict={X: self.training_data, Y: self.training_labels, keep_prob: 1.0}))
+            correct = 0
+            for pred, label in zip(pred_train, self.training_labels):
+                if np.argmax(pred) == np.argmax(label):
+                    correct += 1
+
+            message = "Train Acc: {:.5f}".format(correct / len(pred_train))
             self.feedback.emit('Train', message)
             log.write("\n" + message + "\n")
 
@@ -213,6 +217,8 @@ class ConvTrainer(QtCore.QThread):
             log.write("Training data confusion matrix\n")
             log.write(output + "\n\n")
 
+            # In most cases validation set should be small enough to just run as one batch
+            pred_validation = sess.run(prediction, feed_dict={X: self.validation_data, keep_prob: 1.0})
             message = "Validation Acc: {:.5f}".format(sess.run(accuracy, feed_dict={X: self.validation_data, Y: self.validation_labels, keep_prob: 1.0}))
             self.feedback.emit('Train', message)
             log.write(message + "\n")

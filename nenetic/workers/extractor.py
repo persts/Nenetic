@@ -24,7 +24,7 @@
 # --------------------------------------------------------------------------
 from PyQt5 import QtCore
 
-from nenetic.extractors import *
+from nenetic.extractors import *  # noqa: F403, F401
 
 
 class Extractor(QtCore.QThread):

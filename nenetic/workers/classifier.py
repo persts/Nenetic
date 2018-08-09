@@ -29,7 +29,7 @@ import tensorflow as tf
 from PIL import Image, ImageQt
 from PyQt5 import QtCore, QtGui
 
-from nenetic.extractors import *
+from nenetic.extractors import *  # noqa: F403, F401
 from nenetic.workers import BulkExtractor
 
 

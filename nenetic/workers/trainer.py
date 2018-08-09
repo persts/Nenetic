@@ -45,7 +45,7 @@ class FcTrainer(QtCore.QThread):
         self.learning_rate = model_parameters['learning_rate']
         self.l1_hidden_nodes = model_parameters['l1_hidden_nodes']
         self.l2_hidden_nodes = model_parameters['l2_hidden_nodes']
-        self.batch_size = 256
+        self.batch_size = model_parameters['batch_size']
 
         self.directory = directory
 
