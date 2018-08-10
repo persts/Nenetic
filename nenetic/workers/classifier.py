@@ -111,7 +111,6 @@ class Classifier(QtCore.QThread):
                         self.progress.emit(progress)
                         if row % 20 == 0:
                             self.prep_update()
-                        print("Classifier", bulk_extractor.queue.qsize())
                         row, vector = bulk_extractor.queue.get()
                         if self.stop:
                             for p in bulk_extractor.processes:

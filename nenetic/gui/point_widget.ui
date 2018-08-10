@@ -94,7 +94,7 @@
      <item>
       <widget class="QSpinBox" name="spinBoxPointRadius">
        <property name="minimum">
-        <number>3</number>
+        <number>1</number>
        </property>
        <property name="maximum">
         <number>50</number>
