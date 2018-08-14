@@ -37,13 +37,13 @@ class Neighborhood(Vector):
 
     def extract_row(self, row):
         if self.stack is not None:
-            array = np.array
-            vstack = np.vstack
             cols = self.stack.shape[1] - (self.pad * 2)
-            vector = array([self.extract_region(0, row)])
+            vector = self.extract_region(0, row)
+            vector = vector.reshape((1, ) + vector.shape)
+            shape = vector.shape
             for i in range(1, cols):
-                entry = array([self.extract_region(i, row)])
-                vector = vstack((vector, entry))
+                entry = self.extract_region(i, row).reshape(shape)
+                vector = np.vstack((vector, entry))
             return vector
 
     def extract_value(self, x, y):
@@ -52,7 +52,7 @@ class Neighborhood(Vector):
     def extract_region(self, x, y):
         X = x + (2 * self.pad) + 1
         Y = y + (2 * self.pad) + 1
-        return self.stack[y:Y, x:X].flatten().tolist()
+        return self.stack[y:Y, x:X].flatten()
 
     def preprocess(self, image):
         self.stack = np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value

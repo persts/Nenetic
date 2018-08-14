@@ -79,9 +79,10 @@ class Classifier(QtCore.QThread):
             bulk_extractor.progress.connect(self.relay_progress)
             bulk_extractor.start()
             self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
-            self.feedback.emit('Classifier', 'Populating queue')
-            while bulk_extractor.queue.qsize() < 100:
-                self.sleep(2)
+            if self.extractor.type  == 'vector':
+                self.feedback.emit('Classifier', 'Populating queue')
+                while bulk_extractor.queue.qsize() < 100:
+                    self.sleep(2)
             self.feedback.emit('Classifier', 'Classifying...')
             graph = tf.Graph()
             with graph.as_default():
@@ -111,6 +112,7 @@ class Classifier(QtCore.QThread):
                         self.progress.emit(progress)
                         if row % 20 == 0:
                             self.prep_update()
+                        # print('Queue', bulk_extractor.queue.qsize())
                         row, vector = bulk_extractor.queue.get()
                         if self.stop:
                             for p in bulk_extractor.processes:

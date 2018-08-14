@@ -28,7 +28,7 @@ from nenetic.extractors import Neighborhood
 
 
 class Region(Neighborhood):
-    def __init__(self, pad=25, include_indices=False):
+    def __init__(self, pad=14, include_indices=False):
         Neighborhood.__init__(self)
 
         self.pad = pad
@@ -80,17 +80,3 @@ class Region(Neighborhood):
             stack = np.dstack((stack, new_layer))
 
         self.stack = stack
-
-    def save(self, file_name):
-        self.feedback.emit('Extractor', 'Preparing to save data.')
-        self.shuffle()
-        data = []
-        self.feedback.emit('Extractor', 'Converting image arrays to lists.')
-        for entry in self.data:
-            data.append(entry.tolist())
-        package = {'classes': self.classes, 'labels': self.labels, 'data': data, 'colors': self.colors, 'extractor': {'name': self.name, 'type': self.type, 'kwargs': self.kwargs}}
-        self.feedback.emit('Extractor', 'Writing to disk...')
-        file = open(file_name, 'w')
-        json.dump(package, file)
-        file.close()
-        self.feedback.emit('Extractor', 'Done.')

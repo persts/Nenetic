@@ -52,7 +52,7 @@
         <x>0</x>
         <y>0</y>
         <width>384</width>
-        <height>476</height>
+        <height>480</height>
        </rect>
       </property>
       <attribute name="label">
@@ -543,8 +543,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>315</width>
-        <height>351</height>
+        <width>384</width>
+        <height>480</height>
        </rect>
       </property>
       <attribute name="label">
@@ -757,7 +757,7 @@ p, li { white-space: pre-wrap; }
             <number>32</number>
            </property>
            <property name="maximum">
-            <number>512</number>
+            <number>4092</number>
            </property>
            <property name="value">
             <number>256</number>
@@ -927,8 +927,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>325</width>
-        <height>431</height>
+        <width>302</width>
+        <height>417</height>
        </rect>
       </property>
       <attribute name="label">
@@ -1292,8 +1292,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>327</width>
-        <height>231</height>
+        <width>310</width>
+        <height>221</height>
        </rect>
       </property>
       <attribute name="label">

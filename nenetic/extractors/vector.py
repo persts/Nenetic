@@ -97,17 +97,17 @@ class Vector(QtCore.QObject):
 
     def extract_row(self, row):
         if self.stack is not None:
-            array = np.array
-            vstack = np.vstack
             cols = self.stack.shape[1]
-            vector = np.array([self.extract_value(0, row)])
+            vector = self.extract_value(0, row)
+            vector = vector.reshape((1, ) + vector.shape)
+            shape = vector.shape
             for i in range(1, cols):
-                entry = array([self.extract_value(i, row)])
-                vector = vstack((vector, entry))
+                entry = self.extract_value(i, row).reshape(shape)
+                vector = np.vstack((vector, entry))
             return vector
 
     def extract_value(self, x, y):
-        return self.stack[y, x].tolist()
+        return self.stack[y, x]
 
     def extract_region(self, x, y):
         return self.extract_value(x, y)
@@ -118,7 +118,10 @@ class Vector(QtCore.QObject):
     def save(self, file_name):
         self.feedback.emit('Extractor', 'Preparing to save data.')
         self.shuffle()
-        package = {'classes': self.classes, 'labels': self.labels, 'data': self.data, 'colors': self.colors, 'extractor': {'name': self.name, 'type': self.type, 'kwargs': self.kwargs}}
+        data = []
+        for entry in self.data:
+            data.append(entry.tolist())
+        package = {'classes': self.classes, 'labels': self.labels, 'data': data, 'colors': self.colors, 'extractor': {'name': self.name, 'type': self.type, 'kwargs': self.kwargs}}
         self.feedback.emit('Extractor', 'Writing to disk...')
         file = open(file_name, 'w')
         json.dump(package, file)
