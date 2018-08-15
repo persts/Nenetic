@@ -26,10 +26,17 @@ import numpy as np
 
 from nenetic.extractors import Neighborhood
 
+GPU = False
+try:
+    import cupy
+    GPU = True
+except ImportError:
+    pass
+
 
 class Index(Neighborhood):
-    def __init__(self, pad=0):
-        Neighborhood.__init__(self, pad)
+    def __init__(self, pad=0, force_cpu=False):
+        Neighborhood.__init__(self, pad, force_cpu=force_cpu)
 
         self.name = 'Index'
         self.kwargs = {'pad': pad}
@@ -69,4 +76,7 @@ class Index(Neighborhood):
         new_layer = np.pad(lightness, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
         stack = np.dstack((stack, new_layer))
 
-        self.stack = stack
+        if GPU and not self.force_cpu:
+            self.stack = cupy.array(stack.astype(np.float32))
+        else:
+            self.stack = stack.astype(np.float32)

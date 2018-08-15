@@ -30,12 +30,19 @@ from PyQt5 import QtCore
 from random import shuffle
 from PIL import Image
 
+GPU = False
+try:
+    import cupy
+    GPU = True
+except ImportError:
+    pass
+
 
 class Vector(QtCore.QObject):
     progress = QtCore.pyqtSignal(int)
     feedback = QtCore.pyqtSignal(str, str)
 
-    def __init__(self):
+    def __init__(self, force_cpu=False):
         QtCore.QObject.__init__(self)
         self.classes = []
         self.points = {}
@@ -43,6 +50,8 @@ class Vector(QtCore.QObject):
         self.data = []
         self.labels = []
         self.colors = {}
+
+        self.force_cpu = force_cpu
 
         self.stack = None
 
@@ -103,7 +112,12 @@ class Vector(QtCore.QObject):
             shape = vector.shape
             for i in range(1, cols):
                 entry = self.extract_value(i, row).reshape(shape)
-                vector = np.vstack((vector, entry))
+                if GPU and not self.force_cpu:
+                    vector = cupy.vstack((vector, entry))
+                else:
+                    vector = np.vstack((vector, entry))
+            if GPU and not self.force_cpu:
+                vector = cupy.asnumpy(vector)
             return vector
 
     def extract_value(self, x, y):
@@ -113,7 +127,7 @@ class Vector(QtCore.QObject):
         return self.extract_value(x, y)
 
     def preprocess(self, image):
-        self.stack = [image / self.max_value]
+        self.stack = image / self.max_value
 
     def save(self, file_name):
         self.feedback.emit('Extractor', 'Preparing to save data.')

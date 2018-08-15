@@ -25,36 +25,53 @@
 import time
 from PyQt5 import QtCore
 from multiprocessing import Process, Queue, cpu_count
+from nenetic.extractors import *  # noqa: F403, F401
+
+GPU = False
+try:
+    import cupy
+    GPU = True
+except ImportError:
+    pass
+
+def extract(queue, image, rows, extractor_name, extractor_kwargs):
+    extractor = globals()[extractor_name](**extractor_kwargs)
+    extractor.preprocess(image)
+    count = 0
+    for row in rows:
+        queue.put([row, extractor.extract_row(row)])
+        count += 1
+        if count % 20 == 0:
+            while queue.qsize() > 200:
+                time.sleep(5)
+    return True
 
 
-class BulkExtractor(QtCore.QThread):
-    progress = QtCore.pyqtSignal(int)
+class ExtractorQueue(QtCore.QThread):
 
-    def __init__(self, extractor, image):
+    def __init__(self, image, extractor_name, extractor_kwargs, force_cpu=False):
         QtCore.QThread.__init__(self)
         self.image = image
-        self.extractor = extractor
-        self.extractor.preprocess(self.image)
+        self.extractor_name = extractor_name
+        self.extractor_kwargs = extractor_kwargs
+        self.extractor_kwargs['force_cpu'] = force_cpu
 
         self.queue = Queue()
         self.processes = []
-        self.threads = cpu_count() - 1
-        for i in range(self.threads):
-            rows = [x for x in range(i, self.image.shape[0], self.threads)]
-            p = Process(target=self.extract, args=(rows, ))
-            self.processes.append(p)
-
-    def extract(self, rows):
-        count = 0
-        for row in rows:
-            self.queue.put([row, self.extractor.extract_row(row)])
-            count += 1
-            if count % 10 == 0:
-                while self.queue.qsize() > 100:
-                    time.sleep(5)
-        return True
+        if GPU and not force_cpu:
+            self.threads = 2
+        else:
+            if cpu_count() > 4:
+                self.threads = cpu_count() - 4
+            else:
+                self.threads = cpu_count() - 1
 
     def run(self):
+        for i in range(self.threads):
+            rows = [x for x in range(i, self.image.shape[0], self.threads)]
+            p = Process(target=extract, args=(self.queue, self.image, rows, self.extractor_name, self.extractor_kwargs))
+            self.processes.append(p)
+
         for p in self.processes:
             p.start()
 

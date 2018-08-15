@@ -26,10 +26,17 @@ import numpy as np
 
 from nenetic.extractors import Vector
 
+GPU = False
+try:
+    import cupy
+    GPU = True
+except ImportError:
+    pass
+
 
 class Neighborhood(Vector):
-    def __init__(self, pad=0):
-        Vector.__init__(self)
+    def __init__(self, pad=0, force_cpu=False):
+        Vector.__init__(self, force_cpu=force_cpu)
         self.pad = pad
 
         self.name = 'Neighborhood'
@@ -43,7 +50,12 @@ class Neighborhood(Vector):
             shape = vector.shape
             for i in range(1, cols):
                 entry = self.extract_region(i, row).reshape(shape)
-                vector = np.vstack((vector, entry))
+                if GPU and not self.force_cpu:
+                    vector = cupy.vstack((vector, entry))
+                else:
+                    vector = np.vstack((vector, entry))
+            if GPU and not self.force_cpu:
+                vector = cupy.asnumpy(vector)
             return vector
 
     def extract_value(self, x, y):
@@ -55,4 +67,6 @@ class Neighborhood(Vector):
         return self.stack[y:Y, x:X].flatten()
 
     def preprocess(self, image):
-        self.stack = np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value
+        self.stack = (np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value).astype(np.float32)
+        if GPU and not self.force_cpu:
+            self.stack = cupy.array(self.stack)

@@ -29,8 +29,7 @@ import tensorflow as tf
 from PIL import Image, ImageQt
 from PyQt5 import QtCore, QtGui
 
-from nenetic.extractors import *  # noqa: F403, F401
-from nenetic.workers import BulkExtractor
+from nenetic.workers import ExtractorQueue
 
 
 class Classifier(QtCore.QThread):
@@ -45,6 +44,7 @@ class Classifier(QtCore.QThread):
         self.result = None
         self.threshold = 0.9
         self.model = model
+        self.force_cpu=True
 
         if model is not None:
             self.directory = os.path.split(model)[0]
@@ -57,10 +57,9 @@ class Classifier(QtCore.QThread):
             self.colors = {}
             for color in data['colors']:
                 self.colors[color] = np.array(data['colors'][color])
-
-            name = data['extractor']['name']
-            kwargs = data['extractor']['kwargs']
-            self.extractor = globals()[name](**kwargs)
+            self.extractor_type = data['extractor']['type']
+            self.extractor_name = data['extractor']['name']
+            self.extractor_kwargs = data['extractor']['kwargs']
 
     def load_classified_image(self, file_name):
         img = Image.open(file_name)
@@ -75,31 +74,31 @@ class Classifier(QtCore.QThread):
     def run(self):
         if self.model is not None:
             self.feedback.emit('Classifier', 'Preparing extractors')
-            bulk_extractor = BulkExtractor(self.extractor, self.image)
-            bulk_extractor.progress.connect(self.relay_progress)
-            bulk_extractor.start()
+            extractor_queue = ExtractorQueue(self.image, self.extractor_name, self.extractor_kwargs, force_cpu=self.force_cpu)
+            extractor_queue.start()
             self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
-            if self.extractor.type  == 'vector':
-                self.feedback.emit('Classifier', 'Populating queue')
-                while bulk_extractor.queue.qsize() < 100:
-                    self.sleep(2)
+            self.feedback.emit('Classifier', 'Populating queue')
+            while extractor_queue.queue.qsize() < 100:
+                self.sleep(2)
             self.feedback.emit('Classifier', 'Classifying...')
+            config = tf.ConfigProto()
+            config.gpu_options.allow_growth = True
             graph = tf.Graph()
             with graph.as_default():
-                with tf.Session() as sess:
+                with tf.Session(config=config) as sess:
                     meta = tf.train.import_meta_graph(self.model)
                     meta.restore(sess, tf.train.latest_checkpoint(self.directory))
 
                     X = graph.get_tensor_by_name('Placeholder:0')
                     prediction = graph.get_tensor_by_name('prediction:0')
                     keep_prob = None
-                    if self.extractor.type == 'raster':
+                    if self.extractor_type == 'raster':
                         keep_prob = graph.get_tensor_by_name('keep_prob:0')
                     progress = 0
-                    row, vector = bulk_extractor.queue.get()
+                    row, vector = extractor_queue.queue.get()
                     predictions = None
                     while row is not None:
-                        if self.extractor.type == 'raster':
+                        if self.extractor_type == 'raster':
                             predictions = sess.run(prediction, feed_dict={X: vector, keep_prob: 1.0})
                         else:
                             predictions = sess.run(prediction, feed_dict={X: vector})
@@ -112,13 +111,13 @@ class Classifier(QtCore.QThread):
                         self.progress.emit(progress)
                         if row % 20 == 0:
                             self.prep_update()
-                        # print('Queue', bulk_extractor.queue.qsize())
-                        row, vector = bulk_extractor.queue.get()
+                        # print('Queue', extractor_queue.queue.qsize())
+                        row, vector = extractor_queue.queue.get()
                         if self.stop:
-                            for p in bulk_extractor.processes:
+                            for p in extractor_queue.processes:
                                 p.terminate()
                             self.feedback.emit('Classifier', 'Classification interrupted.')
-                            bulk_extractor.queue = None
+                            extractor_queue.queue = None
                             break
                 self.feedback.emit('Classifier', 'Classification completed.')
             self.prep_update()

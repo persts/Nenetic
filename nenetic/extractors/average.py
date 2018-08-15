@@ -27,10 +27,17 @@ import numpy as np
 from nenetic.extractors import Vector
 from scipy.signal import convolve2d as c2d
 
+GPU = False
+try:
+    import cupy
+    GPU = True
+except ImportError:
+    pass
+
 
 class Average(Vector):
-    def __init__(self, kernels=5, solid_kernel=True):
-        Vector.__init__(self)
+    def __init__(self, kernels=5, solid_kernel=True, force_cpu=False):
+        Vector.__init__(self, force_cpu=force_cpu)
         self.kernels = []
 
         self.name = 'Average'
@@ -53,3 +60,6 @@ class Average(Vector):
             img = np.dstack(bands)
             img = img / self.max_value
             self.stack = np.dstack((self.stack, img))
+        self.stack = self.stack.astype(np.float32)
+        if GPU and not self.force_cpu:
+            self.stack = cupy.array(self.stack)
