@@ -42,7 +42,7 @@ def extract(queue, image, rows, extractor_name, extractor_kwargs):
         queue.put([row, extractor.extract_row(row)])
         count += 1
         if count % 20 == 0:
-            while queue.qsize() > 200:
+            while queue.qsize() > 100:
                 time.sleep(5)
     return True
 
@@ -61,10 +61,7 @@ class ExtractorQueue(QtCore.QThread):
         if GPU and not force_cpu:
             self.threads = 2
         else:
-            if cpu_count() > 4:
-                self.threads = cpu_count() - 4
-            else:
-                self.threads = cpu_count() - 1
+            self.threads = cpu_count() - 1
 
     def run(self):
         for i in range(self.threads):

@@ -78,8 +78,8 @@ class Classifier(QtCore.QThread):
             extractor_queue.start()
             self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
             self.feedback.emit('Classifier', 'Populating queue')
-            while extractor_queue.queue.qsize() < 100:
-                self.sleep(2)
+            # while extractor_queue.queue.qsize() < 100:
+            self.sleep(5)  # Give queue a little bit of a head start
             self.feedback.emit('Classifier', 'Classifying...')
             config = tf.ConfigProto()
             config.gpu_options.allow_growth = True
