@@ -25,6 +25,7 @@
 import os
 import json
 import numpy as np
+import pickle
 
 from PyQt5 import QtCore
 from random import shuffle
@@ -79,8 +80,9 @@ class Vector(QtCore.QObject):
         self.colors = packaged_points['colors']
 
     def extract(self):
-        self.data = []
+        self.data = np.array(None)
         self.labels = []
+        shape = ()
         progress = 0
         for image in self.points:
             try:
@@ -99,10 +101,22 @@ class Vector(QtCore.QObject):
                 points = self.points[image][class_name]
                 for point in points:
                     vector = self.extract_value(int(point['x']), int(point['y']))
-                    self.data.append(vector)
+                    if self.data.shape == ():
+                        if GPU and not self.force_cpu:
+                            self.data = cupy.reshape(vector, (1,) + vector.shape)
+                        else:
+                            self.data = np.reshape(vector, (1,) + vector.shape)
+                        shape = self.data.shape
+                    else:
+                        if GPU and not self.force_cpu:
+                            self.data = cupy.vstack((self.data, cupy.reshape(vector, shape)))
+                        else:
+                            self.data = np.vstack((self.data, np.reshape(vector, shape)))
                     self.labels.append(label)
                     progress += 1
                     self.progress.emit(progress)
+        if GPU and not self.force_cpu:
+            self.data = cupy.asnumpy(self.data)
 
     def extract_row(self, row):
         if self.stack is not None:
@@ -131,23 +145,33 @@ class Vector(QtCore.QObject):
 
     def save(self, file_name):
         self.feedback.emit('Extractor', 'Preparing to save data.')
+        json_format = False
+        if file_name[-4:].lower() == 'json':
+            json_format = True
         self.shuffle()
-        data = []
-        for entry in self.data:
-            data.append(entry.tolist())
-        package = {'classes': self.classes, 'labels': self.labels, 'data': data, 'colors': self.colors, 'extractor': {'name': self.name, 'type': self.type, 'kwargs': self.kwargs}}
         self.feedback.emit('Extractor', 'Writing to disk...')
-        file = open(file_name, 'w')
-        json.dump(package, file)
-        file.close()
+        package = None
+        if json_format:
+            data = []
+            for entry in self.data:
+                data.append(entry.tolist())
+            package = {'classes': self.classes, 'labels': self.labels, 'data': data, 'colors': self.colors, 'extractor': {'name': self.name, 'type': self.type, 'kwargs': self.kwargs}}
+            file = open(file_name, 'w')
+            json.dump(package, file)
+            file.close()
+        else:
+            package = {'classes': self.classes, 'labels': self.labels, 'data': self.data, 'colors': self.colors, 'extractor': {'name': self.name, 'type': self.type, 'kwargs': self.kwargs}}
+            file = open(file_name, 'wb')
+            pickle.dump(package, file)
+            file.close()
         self.feedback.emit('Extractor', 'Done.')
 
     def shuffle(self):
-        shuffle_index = [x for x in range(len(self.data))]
+        shuffle_index = [x for x in range(self.data.shape[0])]
         shuffle(shuffle_index)
-        data = [0] * len(self.data)
-        labels = [0] * len(self.data)
-        for i in range(len(self.data)):
+        data = np.zeros(self.data.shape)
+        labels = [0] * self.data.shape[0]
+        for i in range(self.data.shape[0]):
             data[i] = self.data[shuffle_index[i]]
             labels[i] = self.labels[shuffle_index[i]]
         self.data = data

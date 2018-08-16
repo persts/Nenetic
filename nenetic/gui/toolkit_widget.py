@@ -25,6 +25,7 @@
 import os
 import json
 import time
+import pickle
 import numpy as np
 from PyQt5 import QtWidgets, uic
 
@@ -35,7 +36,7 @@ from nenetic.workers import Classifier
 
 GPU = False
 try:
-    import cupy
+    import cupy  # noqa: F401
     GPU = True
 except ImportError:
     pass
@@ -128,7 +129,11 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
     def extract_training_data(self):
         if self.directory is None:
             self.directory = self.canvas.directory
-        file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.json'), 'Point Files (*.json)')
+        file_name = None
+        if self.checkBoxJson.isChecked():
+            file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.json'), 'Point Files (*.json)')
+        else:
+            file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.p'), 'Point Files (*.p)')
         if file_name[0] is not '':
             self.disable_action_buttons()
             self.directory = os.path.split(file_name[0])[0]
@@ -179,16 +184,21 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.log('Trainer', 'Loading training data...')
         self.progressBar.setValue(0)
         self.progressBar.setRange(0, 0)
-        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Training Data', self.directory, 'Point Files (*.json)')
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Training Data', self.directory, 'Point Files (*.json *.p)')
         if file_name[0] is not '':
-            file = open(file_name[0], 'r')
-            self.training_data = json.load(file)
-            file.close()
+            if file_name[0][-4:].lower() == 'json':
+                file = open(file_name[0], 'r')
+                self.training_data = json.load(file)
+                file.close()
+                self.training_data['data'] = np.array(self.training_data['data'])
+            else:
+                file = open(file_name[0], 'rb')
+                self.training_data = pickle.load(file)
+                file.close()
             self.log('Trainer', 'Done.')
             if 'type' in self.training_data['extractor'] and self.training_data['extractor']['type'] == 'raster':
-                array = np.array(self.training_data['data'][0])
-                total_points = len(self.training_data['data'])
-                image_size = array.shape
+                total_points = self.training_data['data'].shape[0]
+                image_size = self.training_data['data'][0].shape
                 num_classes = len(self.training_data['labels'][0])
                 self.labelImageSize.setText("({}, {}, {})".format(image_size[0], image_size[1], image_size[2]))
                 self.labelNumberClassesConv.setText("{}".format(num_classes))
@@ -204,11 +214,17 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.progressBar.setRange(0, 1)
 
     def load_fc_training_data(self):
-        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Training Data', self.directory, 'Point Files (*.json)')
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Training Data', self.directory, 'Point Files (*.json *.p)')
         if file_name[0] is not '':
-            file = open(file_name[0], 'r')
-            self.training_data = json.load(file)
-            file.close()
+            if file_name[0][-4:].lower() == 'json':
+                file = open(file_name[0], 'r')
+                self.training_data = json.load(file)
+                file.close()
+                self.training_data['data'] = np.array(self.training_data['data'])
+            else:
+                file = open(file_name[0], 'rb')
+                self.training_data = pickle.load(file)
+                file.close()
             if 'type' in self.training_data['extractor'] and self.training_data['extractor']['type'] == 'raster':
                 self.training_data = None
                 self.log('Trainer', 'Wrong training data, format is raster.')
@@ -216,8 +232,8 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 self.labelNumberClasses.setText("0")
                 self.labelTotalPoints.setText("0")
             else:
-                total_points = len(self.training_data['data'])
-                vector_length = len(self.training_data['data'][0])
+                total_points = self.training_data['data'].shape[0]
+                vector_length = self.training_data['data'].shape[1]
                 num_classes = len(self.training_data['labels'][0])
                 self.labelVectorLength.setText("{}".format(vector_length))
                 self.labelNumberClasses.setText("{}".format(num_classes))
