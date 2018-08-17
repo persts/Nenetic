@@ -173,7 +173,9 @@ class ConvTrainer(QtCore.QThread):
         correct_prediction = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-        with tf.Session() as sess:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
             total_batch = int(len(self.training_data) / self.batch_size) + 1
             batch_x = []

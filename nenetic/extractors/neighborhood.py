@@ -48,14 +48,26 @@ class Neighborhood(Vector):
             vector = self.extract_region(0, row)
             vector = vector.reshape((1, ) + vector.shape)
             shape = vector.shape
+            count = 0
+            if GPU and not self.force_cpu:
+                vector = cupy.asnumpy(vector)
+                cupy_vector = None
             for i in range(1, cols):
                 entry = self.extract_region(i, row).reshape(shape)
                 if GPU and not self.force_cpu:
-                    vector = cupy.vstack((vector, entry))
+                    count += 1
+                    if cupy_vector is None:
+                        cupy_vector = entry
+                    else:
+                        cupy_vector = cupy.vstack((cupy_vector, entry))
+                        if count % 400 == 0:
+                            count = 0
+                            vector = np.vstack((vector, cupy.asnumpy(cupy_vector)))
+                            cupy_vector = None
                 else:
                     vector = np.vstack((vector, entry))
             if GPU and not self.force_cpu:
-                vector = cupy.asnumpy(vector)
+                vector = np.vstack((vector, cupy.asnumpy(cupy_vector)))
             return vector
 
     def extract_value(self, x, y):

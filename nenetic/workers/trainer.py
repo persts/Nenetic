@@ -100,7 +100,9 @@ class FcTrainer(QtCore.QThread):
 
         init_op = tf.global_variables_initializer()
 
-        with tf.Session() as sess:
+        config = tf.ConfigProto()
+        config.gpu_options.allow_growth = True
+        with tf.Session(config=config) as sess:
             sess.run(init_op)
             total_batch = int(len(self.training_data) / self.batch_size) + 1
             batch_x = []

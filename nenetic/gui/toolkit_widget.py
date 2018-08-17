@@ -87,6 +87,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         if not GPU:
             self.checkBoxForceCpu.setEnabled(False)
         self.spinBoxCores.setMaximum(cpu_count() - 1)
+        self.spinBoxCores.setValue(cpu_count() - 1)
         self.labelCores.setText(str(cpu_count()))
 
     def classify_image(self):
