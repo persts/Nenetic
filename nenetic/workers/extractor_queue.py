@@ -34,6 +34,7 @@ try:
 except ImportError:
     pass
 
+
 def extract(queue, image, rows, extractor_name, extractor_kwargs):
     extractor = globals()[extractor_name](**extractor_kwargs)
     extractor.preprocess(image)
@@ -49,7 +50,7 @@ def extract(queue, image, rows, extractor_name, extractor_kwargs):
 
 class ExtractorQueue(QtCore.QThread):
 
-    def __init__(self, image, extractor_name, extractor_kwargs, force_cpu=False):
+    def __init__(self, image, extractor_name, extractor_kwargs, number_of_cores=0, force_cpu=False):
         QtCore.QThread.__init__(self)
         self.image = image
         self.extractor_name = extractor_name
@@ -61,7 +62,10 @@ class ExtractorQueue(QtCore.QThread):
         if GPU and not force_cpu:
             self.threads = 2
         else:
-            self.threads = cpu_count() - 1
+            if number_of_cores == 0:
+                self.threads = cpu_count() - 1
+            else:
+                self.threads = number_of_cores
 
     def run(self):
         for i in range(self.threads):

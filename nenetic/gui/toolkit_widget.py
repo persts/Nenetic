@@ -27,6 +27,7 @@ import json
 import time
 import pickle
 import numpy as np
+from multiprocessing import cpu_count
 from PyQt5 import QtWidgets, uic
 
 from nenetic.workers import Extractor
@@ -85,6 +86,8 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
         if not GPU:
             self.checkBoxForceCpu.setEnabled(False)
+        self.spinBoxCores.setMaximum(cpu_count() - 1)
+        self.labelCores.setText(str(cpu_count()))
 
     def classify_image(self):
         if self.canvas.base_image is not None:
@@ -95,6 +98,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
             self.classifier.image = array
             self.classifier.threshold = self.doubleSpinBoxConfidence.value()
             self.classifier.force_cpu = self.checkBoxForceCpu.isChecked()
+            self.classifier.cores = self.spinBoxCores.value()
             self.pushButtonStopClassification.setEnabled(True)
             self.disable_action_buttons()
             self.classifier.start()

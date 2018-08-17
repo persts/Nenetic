@@ -52,14 +52,15 @@ class Average(Vector):
 
     def preprocess(self, image):
         self.stack = image / self.max_value
+        self.stack = self.stack.astype(np.float32)
         for kernel in self.kernels:
             bands = []
             for band in range(image.shape[2]):
                 b = c2d(image[:, :, 0], kernel, mode='same')
                 bands.append(b)
             img = np.dstack(bands)
-            img = img / self.max_value
+            img = (img / self.max_value).astype(np.float32)
             self.stack = np.dstack((self.stack, img))
-        self.stack = self.stack.astype(np.float32)
+            print(kernel.shape)
         if GPU and not self.force_cpu:
             self.stack = cupy.array(self.stack)

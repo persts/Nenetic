@@ -89,4 +89,4 @@ class Region(Neighborhood):
         if GPU and not self.force_cpu:
             self.stack = cupy.array(stack.astype(np.float32))
         else:
-            self.stack = stack.astype(np.float16)
+            self.stack = stack.astype(np.float32)

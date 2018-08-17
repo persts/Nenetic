@@ -44,7 +44,8 @@ class Classifier(QtCore.QThread):
         self.result = None
         self.threshold = 0.9
         self.model = model
-        self.force_cpu=True
+        self.force_cpu = True
+        self.cores = 0
 
         if model is not None:
             self.directory = os.path.split(model)[0]
@@ -74,12 +75,12 @@ class Classifier(QtCore.QThread):
     def run(self):
         if self.model is not None:
             self.feedback.emit('Classifier', 'Preparing extractors')
-            extractor_queue = ExtractorQueue(self.image, self.extractor_name, self.extractor_kwargs, force_cpu=self.force_cpu)
+            extractor_queue = ExtractorQueue(self.image, self.extractor_name, self.extractor_kwargs, number_of_cores=self.cores, force_cpu=self.force_cpu)
             extractor_queue.start()
             self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
-            self.feedback.emit('Classifier', 'Populating queue')
-            # while extractor_queue.queue.qsize() < 100:
-            self.sleep(5)  # Give queue a little bit of a head start
+            # self.feedback.emit('Classifier', 'Populating queue')
+            while extractor_queue.queue.qsize() == 0:
+                self.sleep(2)  # Wait for the preprocessing to complete and for something to be on the queue
             self.feedback.emit('Classifier', 'Classifying...')
             config = tf.ConfigProto()
             config.gpu_options.allow_growth = True
