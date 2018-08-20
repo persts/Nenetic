@@ -35,17 +35,14 @@ except ImportError:
 
 
 class Neighborhood(Vector):
-    def __init__(self, pad=0, force_cpu=False):
-        Vector.__init__(self, force_cpu=force_cpu)
-        self.pad = pad
-
+    def __init__(self, layer_definitions=[], pad=0, force_cpu=False):
+        Vector.__init__(self, layer_definitions=layer_definitions, pad=pad, force_cpu=force_cpu)
         self.name = 'Neighborhood'
-        self.kwargs = {'pad': pad}
 
     def extract_row(self, row):
         if self.stack is not None:
             cols = self.stack.shape[1] - (self.pad * 2)
-            vector = self.extract_region(0, row)
+            vector = self.extract_at(0, row)
             vector = vector.reshape((1, ) + vector.shape)
             shape = vector.shape
             count = 0
@@ -53,7 +50,7 @@ class Neighborhood(Vector):
                 vector = cupy.asnumpy(vector)
                 cupy_vector = None
             for i in range(1, cols):
-                entry = self.extract_region(i, row).reshape(shape)
+                entry = self.extract_at(i, row).reshape(shape)
                 if GPU and not self.force_cpu:
                     count += 1
                     if cupy_vector is None:
@@ -70,15 +67,7 @@ class Neighborhood(Vector):
                 vector = np.vstack((vector, cupy.asnumpy(cupy_vector)))
             return vector
 
-    def extract_value(self, x, y):
-        return self.extract_region(x, y)
-
-    def extract_region(self, x, y):
+    def extract_at(self, x, y):
         X = x + (2 * self.pad) + 1
         Y = y + (2 * self.pad) + 1
         return self.stack[y:Y, x:X].flatten()
-
-    def preprocess(self, image):
-        self.stack = (np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value).astype(np.float32)
-        if GPU and not self.force_cpu:
-            self.stack = cupy.array(self.stack)

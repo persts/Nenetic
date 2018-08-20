@@ -24,29 +24,32 @@
 # --------------------------------------------------------------------------
 from PyQt5 import QtCore
 
-from nenetic.extractors import *  # noqa: F403, F401
+from nenetic.extractors import Region, Neighborhood
 
 
 class Extractor(QtCore.QThread):
     progress = QtCore.pyqtSignal(int)
     feedback = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, extractor_name, packaged_points, file_name, directory, kwargs={}):
+    def __init__(self, extractor_name, layer_definitions, pad, packaged_points, file_name, directory):
         QtCore.QThread.__init__(self)
         self.file_name = file_name
         self.extractor_name = extractor_name
-        self.kwargs = kwargs
+        self.layer_definitions = layer_definitions
+        self.pad = pad
         self.directory = directory
         self.points = packaged_points
 
     def run(self):
-        extractor = globals()[self.extractor_name](**self.kwargs)
+        if self.extractor_name == 'Neighborhood':
+            extractor = Neighborhood(self.layer_definitions, self.pad)
+        else:
+            extractor = Region(self.layer_definitions, self.pad)
         extractor.progress.connect(self.pass_progress)
         extractor.feedback.connect(self.pass_feedback)
         extractor.load_points(self.points, self.directory)
 
         extractor.extract()
-        self.sleep(1)  # Sleep to let gui catch up
         extractor.save(self.file_name)
 
     def pass_feedback(self, tool, message):

@@ -82,6 +82,9 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.checkBoxShowClassification.stateChanged.connect(self.show_classification)
         self.horizontalSliderOpacity.valueChanged.connect(self.canvas.set_opacity)
 
+        self.radioButtonVector.clicked.connect(self.update_region_size_controls)
+        self.radioButtonRaster.clicked.connect(self.update_region_size_controls)
+
         self.canvas.image_loaded.connect(self.image_loaded)
 
         if not GPU:
@@ -148,21 +151,14 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
             self.progressBar.setValue(0)
             self.progressBar.setRange(0, 0)
 
-            tab = self.tabWidgetExtractors.currentIndex()
-            extractor_name = self.tabWidgetExtractors.tabText(tab)
-            kwargs = {}
-            if extractor_name == 'Average':
-                kwargs['kernels'] = self.spinBoxKernels.value()
-                kwargs['solid_kernel'] = self.checkBoxSolidKernel.isChecked()
-            elif extractor_name == 'Neighborhood':
-                kwargs['pad'] = self.spinBoxNeighborhood.value() // 2
-            elif extractor_name == 'Index':
-                kwargs['pad'] = self.spinBoxNeighborhood2.value() // 2
-            elif extractor_name == 'Region':
-                kwargs['pad'] = self.spinBoxRegionSize.value() // 2
-                kwargs['include_indices'] = self.checkBoxIncludeIndices.isChecked()
+            pad = self.spinBoxRegionSize.value() // 2
+            layer_definitions = self.layer_definitions()
+            if self.radioButtonVector.isChecked():
+                extractor_name = 'Neighborhood'
+            else:
+                extractor_name = 'Region'
 
-            self.extractor = Extractor(extractor_name, package, file_name[0], self.directory, kwargs)
+            self.extractor = Extractor(extractor_name, layer_definitions, pad, package, file_name[0], self.directory)
             self.extractor.progress.connect(self.update_progress)
             self.extractor.feedback.connect(self.log)
             self.extractor.finished.connect(self.enable_action_buttons)
@@ -170,6 +166,24 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
     def image_loaded(self, directory, image_name):
         self.checkBoxShowClassification.setChecked(False)
+
+    def layer_definitions(self):
+        definitions = []
+        if self.checkBoxAverage.isChecked():
+            definitions.append({'name': 'average', 'kernels': self.spinBoxKernels.value(), 'solid_kernel': self.checkBoxSolidKernel.isChecked()})
+        if self.checkBoxVndvi.isChecked():
+            definitions.append({'name': 'vndvi'})
+        if self.checkBoxGli.isChecked():
+            definitions.append({'name': 'gli'})
+        if self.checkBoxLightness.isChecked():
+            definitions.append({'name': 'lightness'})
+        if self.checkBoxLuminosity.isChecked():
+            definitions.append({'name': 'luminosity'})
+        if self.checkBoxRgbAverage.isChecked():
+            definitions.append({'name': 'rgb_average'})
+        if self.checkBoxVari.isChecked():
+            definitions.append({'name': 'vari'})
+        return definitions
 
     def load_classification(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Load Classified Image', self.directory, 'JPG (*.jpg)')
@@ -314,3 +328,13 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         if self.progressBar.minimum() == self.progressBar.maximum():
             self.progressBar.setRange(0, self.progress_max)
         self.progressBar.setValue(value)
+
+    def update_region_size_controls(self):
+        if self.radioButtonVector.isChecked():
+            self.spinBoxRegionSize.setMinimum(1)
+            self.spinBoxRegionSize.setValue(1)
+            
+        else:
+            self.spinBoxRegionSize.setMinimum(21)
+            self.spinBoxRegionSize.setValue(31)
+            

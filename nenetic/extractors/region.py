@@ -22,71 +22,17 @@
 # along with with this software.  If not, see <http://www.gnu.org/licenses/>.
 #
 # --------------------------------------------------------------------------
-import json
-import numpy as np
 from nenetic.extractors import Neighborhood
-
-GPU = False
-try:
-    import cupy
-    GPU = True
-except ImportError:
-    pass
 
 
 class Region(Neighborhood):
-    def __init__(self, pad=14, include_indices=False, force_cpu=False):
-        Neighborhood.__init__(self, force_cpu=force_cpu)
-
-        self.pad = pad
-        self.include_indices = include_indices
+    def __init__(self, layer_definitions=[], pad=14, force_cpu=False):
+        Neighborhood.__init__(self, layer_definitions=layer_definitions, pad=pad, force_cpu=force_cpu)
 
         self.type = 'raster'
         self.name = 'Region'
-        self.kwargs = {'pad': pad, 'include_indices': include_indices}
 
-    def extract_region(self, x, y):
+    def extract_at(self, x, y):
         X = x + (2 * self.pad) + 1
         Y = y + (2 * self.pad) + 1
         return self.stack[y:Y, x:X]
-
-    def preprocess(self, image):
-        stack = np.pad(image, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric') / self.max_value
-        if self.include_indices:
-            img = np.int32(image)
-            bands = np.split(img, img.shape[2], axis=2)
-            denom = np.clip(bands[1] + bands[0], 1, None)
-            vndvi = (((bands[1] - bands[0]) / denom) + 1) / 2
-            new_layer = np.pad(vndvi, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
-            stack = np.dstack((stack, new_layer))
-
-            denom = np.clip(2 * bands[1] + bands[0] + bands[2], 1, None)
-            gli = (((2 * bands[1] - bands[0] - bands[2]) / denom) + 1) / 2
-            new_layer = np.pad(gli, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
-            stack = np.dstack((stack, new_layer))
-
-            denom = np.clip(bands[1] + bands[0] - bands[2], 1, None)
-            vari = (((bands[1] - bands[0]) / denom) + 1) / 2
-            new_layer = np.pad(vari, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
-            stack = np.dstack((stack, new_layer))
-
-            average = ((bands[0] + bands[1] + bands[2]) / 3) / self.max_value
-            new_layer = np.pad(average, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
-            stack = np.dstack((stack, new_layer))
-
-            luminosity = (0.21 * bands[0] + 0.72 * bands[1] + 0.07 * bands[2]) / self.max_value
-            new_layer = np.pad(luminosity, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
-            stack = np.dstack((stack, new_layer))
-
-            maximum = np.maximum(bands[0], bands[1])
-            maximum = np.maximum(maximum, bands[2])
-            minimum = np.minimum(bands[0], bands[1])
-            minimum = np.minimum(minimum, bands[2])
-            lightness = ((maximum + minimum) / 2) / self.max_value
-            new_layer = np.pad(lightness, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode='symmetric')
-            stack = np.dstack((stack, new_layer))
-
-        if GPU and not self.force_cpu:
-            self.stack = cupy.array(stack.astype(np.float32))
-        else:
-            self.stack = stack.astype(np.float32)

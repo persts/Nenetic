@@ -25,7 +25,7 @@
 import time
 from PyQt5 import QtCore
 from multiprocessing import Process, Queue, cpu_count
-from nenetic.extractors import *  # noqa: F403, F401
+from nenetic.extractors import Region, Neighborhood
 
 GPU = False
 try:
@@ -36,7 +36,10 @@ except ImportError:
 
 
 def extract(queue, image, rows, extractor_name, extractor_kwargs):
-    extractor = globals()[extractor_name](**extractor_kwargs)
+    if extractor_name == 'Neighborhood':
+        extractor = Neighborhood(**extractor_kwargs)
+    else:
+        extractor = Region(**extractor_kwargs)
     extractor.preprocess(image)
     count = 0
     for row in rows:
