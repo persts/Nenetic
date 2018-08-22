@@ -35,14 +35,6 @@ from nenetic.workers import FcTrainer
 from nenetic.workers import ConvTrainer
 from nenetic.workers import Classifier
 
-GPU = False
-try:
-    import cupy  # noqa: F401
-    GPU = True
-except ImportError:
-    pass
-
-
 CLASS_DIALOG, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'toolkit_widget.ui'))
 
 
@@ -87,8 +79,6 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
         self.canvas.image_loaded.connect(self.image_loaded)
 
-        if not GPU:
-            self.checkBoxForceCpu.setEnabled(False)
         self.spinBoxCores.setMaximum(cpu_count() - 1)
         self.spinBoxCores.setValue(cpu_count() - 1)
         self.labelCores.setText(str(cpu_count()))
@@ -101,7 +91,6 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
             self.progressBar.setRange(0, array.shape[0])
             self.classifier.image = array
             self.classifier.threshold = self.doubleSpinBoxConfidence.value()
-            self.classifier.force_cpu = self.checkBoxForceCpu.isChecked()
             self.classifier.cores = self.spinBoxCores.value()
             self.pushButtonStopClassification.setEnabled(True)
             self.disable_action_buttons()
@@ -133,6 +122,10 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.pushButtonStopConvTraining.setEnabled(False)
         self.pushButtonStopClassification.setEnabled(False)
         self.classifier.stop = False
+
+        self.extractor = None
+        self.fc_trainer = None
+        self.conv_trainer = None
 
     def extract_training_data(self):
         if self.directory is None:

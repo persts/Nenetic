@@ -50,6 +50,7 @@ class Extractor(QtCore.QThread):
         extractor.load_points(self.points, self.directory)
 
         extractor.extract()
+        self.sleep(1)  # Let the gui catch up before the IO
         extractor.save(self.file_name)
 
     def pass_feedback(self, tool, message):

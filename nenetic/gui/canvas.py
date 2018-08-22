@@ -185,7 +185,6 @@ class Canvas(QtWidgets.QGraphicsScene):
         return (package, count)
 
     def rename_class(self, old_class, new_class):
-        print(old_class, new_class)
         self.colors[new_class] = self.colors.pop(old_class)
         index = self.classes.index(old_class)
         del self.classes[index]

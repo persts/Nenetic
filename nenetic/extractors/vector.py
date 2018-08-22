@@ -33,19 +33,12 @@ from PIL import Image
 
 from nenetic.extractors import Generator
 
-GPU = False
-try:
-    import cupy
-    GPU = True
-except ImportError:
-    pass
-
 
 class Vector(QtCore.QObject):
     progress = QtCore.pyqtSignal(int)
     feedback = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, layer_definitions=[], pad=0, force_cpu=False):
+    def __init__(self, layer_definitions=[], pad=0):
         QtCore.QObject.__init__(self)
         self.classes = []
         self.points = {}
@@ -56,7 +49,6 @@ class Vector(QtCore.QObject):
 
         self.layer_definitions = layer_definitions
         self.pad = pad
-        self.force_cpu = force_cpu
 
         self.stack = None
         self.generator = Generator()
@@ -86,7 +78,6 @@ class Vector(QtCore.QObject):
     def extract(self):
         self.data = np.array(None)
         self.labels = []
-        shape = ()
         progress = 0
         for image in self.points:
             try:
@@ -103,39 +94,26 @@ class Vector(QtCore.QObject):
                 label = [0] * len(self.classes)
                 label[self.classes.index(class_name)] = 1
                 points = self.points[image][class_name]
-                for point in points:
-                    vector = self.extract_at(int(point['x']), int(point['y']))
-                    if self.data.shape == ():
-                        if GPU and not self.force_cpu:
-                            self.data = cupy.reshape(vector, (1,) + vector.shape)
-                        else:
-                            self.data = np.reshape(vector, (1,) + vector.shape)
-                        shape = self.data.shape
-                    else:
-                        if GPU and not self.force_cpu:
-                            self.data = cupy.vstack((self.data, cupy.reshape(vector, shape)))
-                        else:
-                            self.data = np.vstack((self.data, np.reshape(vector, shape)))
+                buffer = self.extract_at(0, 0)
+                buffer = np.ndarray((len(points), ) + buffer.shape)
+                for p in range(len(points)):
+                    point = points[p]
+                    buffer[p] = self.extract_at(int(point['x']), int(point['y']))
                     self.labels.append(label)
                     progress += 1
                     self.progress.emit(progress)
-        if GPU and not self.force_cpu:
-            self.data = cupy.asnumpy(self.data)
+                if self.data.shape == ():
+                    self.data = buffer
+                else:
+                    self.data = np.vstack((self.data, buffer))
 
     def extract_row(self, row):
         if self.stack is not None:
             cols = self.stack.shape[1]
             vector = self.extract_at(0, row)
-            vector = vector.reshape((1, ) + vector.shape)
-            shape = vector.shape
-            for i in range(1, cols):
-                entry = self.extract_at(i, row).reshape(shape)
-                if GPU and not self.force_cpu:
-                    vector = cupy.vstack((vector, entry))
-                else:
-                    vector = np.vstack((vector, entry))
-            if GPU and not self.force_cpu:
-                vector = cupy.asnumpy(vector)
+            vector = np.ndarray((cols, ) + vector.shape)
+            for i in range(cols):
+                vector[i] = self.extract_at(i, row)
             return vector
 
     def extract_at(self, x, y):
@@ -143,10 +121,7 @@ class Vector(QtCore.QObject):
 
     def preprocess(self, image):
         stack, _ = self.generator.generate(image, self.layer_definitions, self.pad)
-        if GPU and not self.force_cpu:
-            self.stack = cupy.array(stack.astype(np.float32))
-        else:
-            self.stack = stack.astype(np.float32)
+        self.stack = stack.astype(np.float32)
 
     def save(self, file_name):
         self.feedback.emit('Extractor', 'Preparing to save data.')

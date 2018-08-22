@@ -44,7 +44,6 @@ class Classifier(QtCore.QThread):
         self.result = None
         self.threshold = 0.9
         self.model = model
-        self.force_cpu = True
         self.cores = 0
 
         if model is not None:
@@ -75,7 +74,7 @@ class Classifier(QtCore.QThread):
     def run(self):
         if self.model is not None:
             self.feedback.emit('Classifier', 'Preparing extractors')
-            extractor_queue = ExtractorQueue(self.image, self.extractor_name, self.extractor_kwargs, number_of_cores=self.cores, force_cpu=self.force_cpu)
+            extractor_queue = ExtractorQueue(self.image, self.extractor_name, self.extractor_kwargs, number_of_cores=self.cores)
             extractor_queue.start()
             self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
             # self.feedback.emit('Classifier', 'Populating queue')
@@ -97,7 +96,6 @@ class Classifier(QtCore.QThread):
                         keep_prob = graph.get_tensor_by_name('keep_prob:0')
                     progress = 0
                     row, vector = extractor_queue.queue.get()
-                    predictions = None
                     while row is not None:
                         if self.extractor_type == 'raster':
                             predictions = sess.run(prediction, feed_dict={X: vector, keep_prob: 1.0})
@@ -110,9 +108,8 @@ class Classifier(QtCore.QThread):
                                 self.result[row, i] = self.colors[class_name]
                         progress += 1
                         self.progress.emit(progress)
-                        if row % 20 == 0:
+                        if progress % 20 == 0:
                             self.prep_update()
-                        # print('Queue', extractor_queue.queue.qsize())
                         row, vector = extractor_queue.queue.get()
                         if self.stop:
                             for p in extractor_queue.processes:

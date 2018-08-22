@@ -26,8 +26,8 @@ from nenetic.extractors import Neighborhood
 
 
 class Region(Neighborhood):
-    def __init__(self, layer_definitions=[], pad=14, force_cpu=False):
-        Neighborhood.__init__(self, layer_definitions=layer_definitions, pad=pad, force_cpu=force_cpu)
+    def __init__(self, layer_definitions=[], pad=14):
+        Neighborhood.__init__(self, layer_definitions=layer_definitions, pad=pad)
 
         self.type = 'raster'
         self.name = 'Region'

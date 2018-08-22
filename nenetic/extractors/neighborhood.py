@@ -26,45 +26,19 @@ import numpy as np
 
 from nenetic.extractors import Vector
 
-GPU = False
-try:
-    import cupy
-    GPU = True
-except ImportError:
-    pass
-
 
 class Neighborhood(Vector):
-    def __init__(self, layer_definitions=[], pad=0, force_cpu=False):
-        Vector.__init__(self, layer_definitions=layer_definitions, pad=pad, force_cpu=force_cpu)
+    def __init__(self, layer_definitions=[], pad=0):
+        Vector.__init__(self, layer_definitions=layer_definitions, pad=pad)
         self.name = 'Neighborhood'
 
     def extract_row(self, row):
         if self.stack is not None:
-            cols = self.stack.shape[1] - (self.pad * 2)
             vector = self.extract_at(0, row)
-            vector = vector.reshape((1, ) + vector.shape)
-            shape = vector.shape
-            count = 0
-            if GPU and not self.force_cpu:
-                vector = cupy.asnumpy(vector)
-                cupy_vector = None
-            for i in range(1, cols):
-                entry = self.extract_at(i, row).reshape(shape)
-                if GPU and not self.force_cpu:
-                    count += 1
-                    if cupy_vector is None:
-                        cupy_vector = entry
-                    else:
-                        cupy_vector = cupy.vstack((cupy_vector, entry))
-                        if count % 400 == 0:
-                            count = 0
-                            vector = np.vstack((vector, cupy.asnumpy(cupy_vector)))
-                            cupy_vector = None
-                else:
-                    vector = np.vstack((vector, entry))
-            if GPU and not self.force_cpu:
-                vector = np.vstack((vector, cupy.asnumpy(cupy_vector)))
+            cols = self.stack.shape[1] - (self.pad * 2)
+            vector = np.ndarray((cols, ) + vector.shape)
+            for i in range(cols):
+                vector[i] = self.extract_at(i, row)
             return vector
 
     def extract_at(self, x, y):

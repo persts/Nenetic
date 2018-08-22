@@ -23,21 +23,21 @@
 #
 # --------------------------------------------------------------------------
 import sys
-import multiprocessing
 from PyQt5 import QtWidgets
+# import multiprocessing
 from nenetic.gui import CentralWidget
 
 if __name__ == '__main__':
-	multiprocessing.set_start_method('spawn')
-	app = QtWidgets.QApplication(sys.argv)
-	if 'plastique' in QtWidgets.QStyleFactory().keys():
-	    app.setStyle(QtWidgets.QStyleFactory.create('plastique'))
-	screen = app.desktop().availableGeometry()
-	main = QtWidgets.QMainWindow()
-	main.setWindowTitle('Neural Network Image Classifier - [Nenetic]')
-	main.setCentralWidget(CentralWidget())
-	main.show()
-	main.resize(int(screen.width() * .95), screen.height())
-	main.move(int(screen.width() * .05) // 2, 0)
+    # multiprocessing.set_start_method('spawn')
+    app = QtWidgets.QApplication(sys.argv)
+    if 'plastique' in QtWidgets.QStyleFactory().keys():
+        app.setStyle(QtWidgets.QStyleFactory.create('plastique'))
+    screen = app.desktop().availableGeometry()
+    main = QtWidgets.QMainWindow()
+    main.setWindowTitle('Neural Network Image Classifier - [Nenetic]')
+    main.setCentralWidget(CentralWidget())
+    main.show()
+    main.resize(int(screen.width() * .95), screen.height())
+    main.move(int(screen.width() * .05) // 2, 0)
 
-	sys.exit(app.exec_())
+    sys.exit(app.exec_())
