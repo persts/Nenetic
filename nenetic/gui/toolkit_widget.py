@@ -128,34 +128,36 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.conv_trainer = None
 
     def extract_training_data(self):
-        if self.directory is None:
-            self.directory = self.canvas.directory
-        file_name = None
-        if self.checkBoxJson.isChecked():
-            file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.json'), 'Point Files (*.json)')
-        else:
-            file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.p'), 'Point Files (*.p)')
-        if file_name[0] is not '':
-            self.disable_action_buttons()
-            self.directory = os.path.split(file_name[0])[0]
-
-            package, point_count = self.canvas.package_points()
-            self.progress_max = point_count
-            self.progressBar.setValue(0)
-            self.progressBar.setRange(0, 0)
-
-            pad = self.spinBoxRegionSize.value() // 2
-            layer_definitions = self.layer_definitions()
-            if self.radioButtonVector.isChecked():
-                extractor_name = 'Neighborhood'
+        package, point_count = self.canvas.package_points()
+        if point_count > 0:
+            if self.directory is None:
+                self.directory = self.canvas.directory
+            if self.checkBoxJson.isChecked():
+                file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.json'), 'Point Files (*.json)')
             else:
-                extractor_name = 'Region'
+                file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.p'), 'Point Files (*.p)')
+            if file_name[0] is not '':
+                self.disable_action_buttons()
+                self.directory = os.path.split(file_name[0])[0]
 
-            self.extractor = Extractor(extractor_name, layer_definitions, pad, package, file_name[0], self.directory)
-            self.extractor.progress.connect(self.update_progress)
-            self.extractor.feedback.connect(self.log)
-            self.extractor.finished.connect(self.enable_action_buttons)
-            self.extractor.start()
+                self.progress_max = point_count
+                self.progressBar.setValue(0)
+                self.progressBar.setRange(0, 0)
+
+                pad = self.spinBoxRegionSize.value() // 2
+                layer_definitions = self.layer_definitions()
+                if self.radioButtonVector.isChecked():
+                    extractor_name = 'Neighborhood'
+                else:
+                    extractor_name = 'Region'
+
+                self.extractor = Extractor(extractor_name, layer_definitions, pad, package, file_name[0], self.directory)
+                self.extractor.progress.connect(self.update_progress)
+                self.extractor.feedback.connect(self.log)
+                self.extractor.finished.connect(self.enable_action_buttons)
+                self.extractor.start()
+        else:
+            self.log('Extractor', 'Zero training points')
 
     def image_loaded(self, directory, image_name):
         self.checkBoxShowClassification.setChecked(False)
@@ -326,8 +328,6 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         if self.radioButtonVector.isChecked():
             self.spinBoxRegionSize.setMinimum(1)
             self.spinBoxRegionSize.setValue(1)
-            
         else:
             self.spinBoxRegionSize.setMinimum(21)
             self.spinBoxRegionSize.setValue(31)
-            
