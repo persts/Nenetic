@@ -128,17 +128,15 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.conv_trainer = None
 
     def extract_training_data(self):
+        self.directory = self.canvas.directory
         package, point_count = self.canvas.package_points()
         if point_count > 0:
-            if self.directory is None:
-                self.directory = self.canvas.directory
             if self.checkBoxJson.isChecked():
                 file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.json'), 'Point Files (*.json)')
             else:
                 file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.p'), 'Point Files (*.p)')
             if file_name[0] is not '':
                 self.disable_action_buttons()
-                self.directory = os.path.split(file_name[0])[0]
 
                 self.progress_max = point_count
                 self.progressBar.setValue(0)
@@ -151,11 +149,12 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 else:
                     extractor_name = 'Region'
 
-                self.extractor = Extractor(extractor_name, layer_definitions, pad, package, file_name[0], self.directory)
+                self.extractor = Extractor(extractor_name, layer_definitions, pad, package, file_name[0], self.canvas.directory)
                 self.extractor.progress.connect(self.update_progress)
                 self.extractor.feedback.connect(self.log)
                 self.extractor.finished.connect(self.enable_action_buttons)
                 self.extractor.start()
+
         else:
             self.log('Extractor', 'Zero training points')
 
@@ -181,7 +180,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         return definitions
 
     def load_classification(self):
-        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Load Classified Image', self.directory, 'JPG (*.jpg)')
+        file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Load Classified Image', self.directory, 'PNG (*.png)')
         if file_name[0] is not '':
             self.classifier.load_classified_image(file_name[0])
 
@@ -259,7 +258,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
     def save_classification(self):
         if self.classifier is not None:
-            file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Classified Image', os.path.join(self.canvas.directory, 'untitled.jpg'), 'JPG (*.jpg)')
+            file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Classified Image', os.path.join(self.canvas.directory, 'untitled.png'), 'PNG (*.png)')
             if file_name[0] is not '':
                 self.classifier.save_classification(file_name[0])
 

@@ -31,7 +31,7 @@ class Generator():
                         self.layers.append('band_{}_avg_{}'.format(band + 1, size))
             elif layer_def['name'] == 'gli':
                 denom = np.clip(2 * bands[1] + bands[0] + bands[2], 1, None)
-                gli = (((2 * bands[1] - bands[0] - bands[2]) / denom) + 1) / 2
+                gli = (((2 * bands[1] - bands[0] - bands[2]) / denom) + 1.0) / 2.0
                 self.stack = np.dstack((self.stack, gli.astype(np.float32)))
                 self.layers.append('gli')
             elif layer_def['name'] == 'lightness':
@@ -51,13 +51,14 @@ class Generator():
                 self.stack = np.dstack((self.stack, average.astype(np.float32)))
                 self.layers.append('rgb_average')
             elif layer_def['name'] == 'vari':
-                denom = np.clip(bands[1] + bands[0] - bands[2], 1, None)
-                vari = (((bands[1] - bands[0]) / denom) + 1) / 2
+                denom = bands[1] + bands[0] - bands[2]
+                denom[denom == 0.0] = 1
+                vari = (((bands[1] - bands[0]) / denom) + 1.0) / 2.0
                 self.stack = np.dstack((self.stack, vari.astype(np.float32)))
                 self.layers.append('vari')
             elif layer_def['name'] == 'vndvi':
                 denom = np.clip(bands[1] + bands[0], 1, None)
-                vndvi = (((bands[1] - bands[0]) / denom) + 1) / 2
+                vndvi = (((bands[1] - bands[0]) / denom) + 1.0) / 2.0
                 self.stack = np.dstack((self.stack, vndvi.astype(np.float32)))
                 self.layers.append('vndvi')
             else:

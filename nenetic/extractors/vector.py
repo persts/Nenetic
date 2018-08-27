@@ -83,8 +83,8 @@ class Vector(QtCore.QObject):
             try:
                 img = Image.open(os.path.join(self.directory, image))
             except OSError as e:
-                self.feedback.emit('Extractor', image + ' could not be opened, skipping...')
-                break
+                self.feedback.emit('Extractor', image + ' could not be opened')
+                return False
             array = np.array(img)
             img.close()
             self.feedback.emit('Extractor', 'Preprocessing image -> {}'.format(image))
@@ -106,6 +106,7 @@ class Vector(QtCore.QObject):
                     self.data = buffer
                 else:
                     self.data = np.vstack((self.data, buffer))
+        return True
 
     def extract_row(self, row):
         if self.stack is not None:
