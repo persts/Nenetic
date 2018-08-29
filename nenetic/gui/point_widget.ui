@@ -133,7 +133,7 @@
         <enum>Qt::RightToLeft</enum>
        </property>
        <property name="text">
-        <string>Dsiplay</string>
+        <string>Display</string>
        </property>
        <property name="checked">
         <bool>true</bool>
