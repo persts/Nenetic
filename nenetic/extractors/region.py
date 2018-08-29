@@ -32,7 +32,10 @@ class Region(Neighborhood):
         self.type = 'raster'
         self.name = 'Region'
 
-    def extract_at(self, x, y):
+    def extract_at(self, x, y, dst=None):
         X = x + (2 * self.pad) + 1
         Y = y + (2 * self.pad) + 1
-        return self.stack[y:Y, x:X]
+        if dst is None:
+            return self.stack[y:Y, x:X]
+        else:
+            dst[:] = self.stack[y:Y, x:X]

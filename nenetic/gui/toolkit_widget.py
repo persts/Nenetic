@@ -27,7 +27,6 @@ import json
 import time
 import pickle
 import numpy as np
-from multiprocessing import cpu_count
 from PyQt5 import QtWidgets, uic
 
 from nenetic.workers import Extractor
@@ -79,10 +78,6 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
         self.canvas.image_loaded.connect(self.image_loaded)
 
-        self.spinBoxCores.setMaximum(cpu_count() - 1)
-        self.spinBoxCores.setValue(cpu_count() - 1)
-        self.labelCores.setText(str(cpu_count()))
-
     def classify_image(self):
         if self.canvas.base_image is not None:
             self.checkBoxShowClassification.setChecked(True)
@@ -91,7 +86,6 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
             self.progressBar.setRange(0, array.shape[0])
             self.classifier.image = array
             self.classifier.threshold = self.doubleSpinBoxConfidence.value()
-            self.classifier.cores = self.spinBoxCores.value()
             self.pushButtonStopClassification.setEnabled(True)
             self.disable_action_buttons()
             self.classifier.start()

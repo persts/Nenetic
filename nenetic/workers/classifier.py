@@ -29,7 +29,7 @@ import tensorflow as tf
 from PIL import Image, ImageQt
 from PyQt5 import QtCore, QtGui
 
-from nenetic.workers import ExtractorQueue
+from nenetic.workers import ExtractorPool
 
 
 class Classifier(QtCore.QThread):
@@ -44,7 +44,6 @@ class Classifier(QtCore.QThread):
         self.result = None
         self.threshold = 0.9
         self.model = model
-        self.cores = 0
 
         if model is not None:
             self.directory = os.path.split(model)[0]
@@ -74,12 +73,12 @@ class Classifier(QtCore.QThread):
     def run(self):
         if self.model is not None:
             self.feedback.emit('Classifier', 'Preparing extractors')
-            extractor_queue = ExtractorQueue(self.image, self.extractor_name, self.extractor_kwargs, number_of_cores=self.cores)
-            extractor_queue.start()
+            extractor_pool = ExtractorPool(self.image, self.extractor_name, self.extractor_kwargs)
+            extractor_pool.start()
             self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
-            # self.feedback.emit('Classifier', 'Populating queue')
-            while extractor_queue.queue.qsize() == 0:
-                self.sleep(2)  # Wait for the preprocessing to complete and for something to be on the queue
+            while not extractor_pool.ready:
+                self.sleep(1)  # Wait for the preprocessing to complete and for something to be on the queue
+            processes = len(extractor_pool.processes)
             self.feedback.emit('Classifier', 'Classifying...')
             config = tf.ConfigProto()
             config.gpu_options.allow_growth = True
@@ -95,30 +94,40 @@ class Classifier(QtCore.QThread):
                     if self.extractor_type == 'raster':
                         keep_prob = graph.get_tensor_by_name('keep_prob:0')
                     progress = 0
-                    row, vector = extractor_queue.queue.get()
-                    while row is not None:
-                        if self.extractor_type == 'raster':
-                            predictions = sess.run(prediction, feed_dict={X: vector, keep_prob: 1.0})
-                        else:
-                            predictions = sess.run(prediction, feed_dict={X: vector})
-                        for i in range(self.image.shape[1]):
-                            p = np.argmax(predictions[i])
-                            if predictions[i][p] >= self.threshold:
-                                class_name = self.classes[p]
-                                self.result[row, i] = self.colors[class_name]
-                        progress += 1
-                        self.progress.emit(progress)
-                        if progress % 20 == 0:
-                            self.prep_update()
-                        row, vector = extractor_queue.queue.get()
-                        if self.stop:
-                            for p in extractor_queue.processes:
-                                p.terminate()
-                            self.feedback.emit('Classifier', 'Classification interrupted.')
-                            extractor_queue.queue = None
-                            break
+                    while extractor_pool.isRunning():
+                        count = 0
+                        for c in range(processes):
+                            row = extractor_pool.states[c].value
+                            if row >= 0:
+                                with extractor_pool.states[c].get_lock():
+                                    count += 1
+                                    if self.extractor_type == 'raster':
+                                        predictions = sess.run(prediction, feed_dict={X: extractor_pool.arrays[c], keep_prob: 1.0})
+                                    else:
+                                        predictions = sess.run(prediction, feed_dict={X: extractor_pool.arrays[c]})
+                                    extractor_pool.states[c].value = -1
+                                for i in range(self.image.shape[1]):
+                                    p = np.argmax(predictions[i])
+                                    if predictions[i][p] >= self.threshold:
+                                        class_name = self.classes[p]
+                                        self.result[row, i] = self.colors[class_name]
+                                progress += 1
+                                self.progress.emit(progress)
+                                if progress % 20 == 0:
+                                    self.prep_update()
+                            if self.stop:
+                                for p in extractor_pool.processes:
+                                    p.terminate()
+                                while extractor_pool.isRunning():
+                                    self.sleep(1)
+                                break
+                                self.feedback.emit('Classifier', 'Classification interrupted.')
+                        if count == 0:
+                            print('sleeping')
+                            self.msleep(500)
                 self.feedback.emit('Classifier', 'Classification completed.')
             self.prep_update()
+            extractor_pool = None
         else:
             self.feedback.emit('Classifier', 'No model is loaded.')
 

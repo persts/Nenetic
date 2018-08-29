@@ -32,16 +32,22 @@ class Neighborhood(Vector):
         Vector.__init__(self, layer_definitions=layer_definitions, pad=pad)
         self.name = 'Neighborhood'
 
-    def extract_row(self, row):
+    def extract_row(self, row, dst=None):
         if self.stack is not None:
-            vector = self.extract_at(0, row)
             cols = self.stack.shape[1] - (self.pad * 2)
-            vector = np.ndarray((cols, ) + vector.shape)
+            if dst is None:
+                vector = self.extract_at(0, row)
+                vector = np.ndarray((cols, ) + vector.shape)
+            else:
+                vector = dst
             for i in range(cols):
-                vector[i] = self.extract_at(i, row)
+                self.extract_at(i, row, dst=vector[i])
             return vector
 
-    def extract_at(self, x, y):
+    def extract_at(self, x, y, dst=None):
         X = x + (2 * self.pad) + 1
         Y = y + (2 * self.pad) + 1
-        return self.stack[y:Y, x:X].flatten()
+        if dst is None:
+            return self.stack[y:Y, x:X].flatten()
+        else:
+            dst[:] = self.stack[y:Y, x:X].flatten()
