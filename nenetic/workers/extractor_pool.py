@@ -78,7 +78,6 @@ class ExtractorPool(QtCore.QThread):
             max_children = 1
         elif max_children > 250:
             max_children = 250
-        print('Spawning', max_children, 'processes')
         for i in range(max_children):
             state = Value('i', -1)
             mem = Array(ctypes.c_float, mem_size)

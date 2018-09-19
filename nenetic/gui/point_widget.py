@@ -71,7 +71,7 @@ class PointWidget(QtWidgets.QWidget, WIDGET):
             self.display_count_tree()
 
     def display_points(self, display):
-        self.canvas.toggle_points(display)
+        self.canvas.toggle_points(display=display)
 
     def double_click(self, model_index):
         item = self.model.itemFromIndex(model_index)

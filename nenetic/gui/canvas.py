@@ -50,12 +50,12 @@ class Canvas(QtWidgets.QGraphicsScene):
         self.qt_image = None
         self.classified_image = None
 
-        self.display_point_radius = 25
+        self.display_point_radius = 5
         self.opacity = 0.30
 
         self.active_brush = QtGui.QBrush(QtCore.Qt.yellow, QtCore.Qt.SolidPattern)
         self.active_pen = QtGui.QPen(self.active_brush, 2)
-        self.selected_pen = QtGui.QPen(QtGui.QBrush(QtCore.Qt.red, QtCore.Qt.SolidPattern), 3)
+        self.selected_pen = QtGui.QPen(QtGui.QBrush(QtCore.Qt.red, QtCore.Qt.SolidPattern), 1)
 
     def add_class(self, class_name):
         if class_name not in self.classes:
@@ -183,6 +183,12 @@ class Canvas(QtWidgets.QGraphicsScene):
                     dst.append(p)
                     count += 1
         return (package, count)
+
+    def relabel_selected_points(self):
+        if self.current_class_name is not None:
+            for class_name, point in self.selection:
+                self.add_point(point)
+            self.delete_selected_points()
 
     def rename_class(self, old_class, new_class):
         self.colors[new_class] = self.colors.pop(old_class)
