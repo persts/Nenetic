@@ -191,14 +191,21 @@ class Canvas(QtWidgets.QGraphicsScene):
             self.delete_selected_points()
 
     def rename_class(self, old_class, new_class):
-        self.colors[new_class] = self.colors.pop(old_class)
         index = self.classes.index(old_class)
         del self.classes[index]
-        self.classes.append(new_class)
-        self.classes.sort()
+        if new_class not in self.classes:
+            self.colors[new_class] = self.colors.pop(old_class)
+            self.classes.append(new_class)
+            self.classes.sort()
+        else:
+            del self.colors[old_class]
+
         for image in self.points:
-            if old_class in self.points[image]:
+            if old_class in self.points[image] and new_class in self.points[image]:
+                self.points[image][new_class] += self.points[image].pop(old_class)
+            elif old_class in self.points[image]:
                 self.points[image][new_class] = self.points[image].pop(old_class)
+        self.display_points()
 
     def reset(self, clear_image=False):
         self.points = {}
@@ -238,7 +245,7 @@ class Canvas(QtWidgets.QGraphicsScene):
                     self.selection.append((class_name, point))
 
     def set_current_class(self, class_index):
-        if class_index is None:
+        if class_index is None or class_index >= len(self.classes):
             self.current_class_name = None
         else:
             self.current_class_name = self.classes[class_index]

@@ -83,6 +83,7 @@ class PointWidget(QtWidgets.QWidget, WIDGET):
             old_class = self.canvas.classes[row]
             new_class = self.tableWidgetClasses.item(row, column).text()
             if old_class != new_class:
+                self.tableWidgetClasses.selectionModel().clear()
                 self.canvas.rename_class(old_class, new_class)
                 self.display_classes()
                 self.display_count_tree()
