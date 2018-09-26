@@ -121,6 +121,10 @@ class Canvas(QtWidgets.QGraphicsScene):
         self.current_image_name = os.path.split(url.path())[1]
         self.base_image = Image.open(url.path())
         imageArray = np.array(self.base_image)
+        # Apply basic min max stretch to the image
+        imageArray[:, :, 0] = np.interp(imageArray[:, :, 0], (imageArray[:, :, 0].min(), imageArray[:, :, 0].max()), (0, 255))
+        imageArray[:, :, 1] = np.interp(imageArray[:, :, 1], (imageArray[:, :, 1].min(), imageArray[:, :, 1].max()), (0, 255))
+        imageArray[:, :, 2] = np.interp(imageArray[:, :, 2], (imageArray[:, :, 2].min(), imageArray[:, :, 2].max()), (0, 255))
         pad = np.zeros((imageArray.shape[0], imageArray.shape[1]), dtype='uint8')
         split = np.split(imageArray, imageArray.shape[2], axis=2)
         qData = np.dstack((split[2], split[1], split[0], pad))

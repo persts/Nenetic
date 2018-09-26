@@ -123,7 +123,6 @@ class Classifier(QtCore.QThread):
                                 break
                                 self.feedback.emit('Classifier', 'Classification interrupted.')
                         if count == 0:
-                            print('sleeping')
                             self.msleep(500)
                 self.feedback.emit('Classifier', 'Classification completed.')
             self.prep_update()
