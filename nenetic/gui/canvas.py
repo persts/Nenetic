@@ -125,10 +125,7 @@ class Canvas(QtWidgets.QGraphicsScene):
         imageArray[:, :, 0] = np.interp(imageArray[:, :, 0], (imageArray[:, :, 0].min(), imageArray[:, :, 0].max()), (0, 255))
         imageArray[:, :, 1] = np.interp(imageArray[:, :, 1], (imageArray[:, :, 1].min(), imageArray[:, :, 1].max()), (0, 255))
         imageArray[:, :, 2] = np.interp(imageArray[:, :, 2], (imageArray[:, :, 2].min(), imageArray[:, :, 2].max()), (0, 255))
-        pad = np.zeros((imageArray.shape[0], imageArray.shape[1]), dtype='uint8')
-        split = np.split(imageArray, imageArray.shape[2], axis=2)
-        qData = np.dstack((split[2], split[1], split[0], pad))
-        self.qt_image = QtGui.QImage(qData.data, imageArray.shape[1], imageArray.shape[0], 4)
+        self.qt_image = QtGui.QImage(imageArray.data, imageArray.shape[1], imageArray.shape[0], QtGui.QImage.Format_RGB888)
         self.addPixmap(QtGui.QPixmap.fromImage(self.qt_image))
 
         self.classified_image = QtGui.QPixmap(self.qt_image.width(), self.qt_image.height())
