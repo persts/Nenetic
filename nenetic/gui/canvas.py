@@ -128,7 +128,10 @@ class Canvas(QtWidgets.QGraphicsScene):
             imageArray[:, :, 0] = np.interp(imageArray[:, :, 0], (imageArray[:, :, 0].min(), imageArray[:, :, 0].max()), (0, 255))
             imageArray[:, :, 1] = np.interp(imageArray[:, :, 1], (imageArray[:, :, 1].min(), imageArray[:, :, 1].max()), (0, 255))
             imageArray[:, :, 2] = np.interp(imageArray[:, :, 2], (imageArray[:, :, 2].min(), imageArray[:, :, 2].max()), (0, 255))
-            self.qt_image = QtGui.QImage(imageArray.data, imageArray.shape[1], imageArray.shape[0], QtGui.QImage.Format_RGB888)
+            if imageArray.shape[2] == 4:
+                self.qt_image = QtGui.QImage(imageArray.data, imageArray.shape[1], imageArray.shape[0], QtGui.QImage.Format_RGBA8888)
+            else:
+                self.qt_image = QtGui.QImage(imageArray.data, imageArray.shape[1], imageArray.shape[0], QtGui.QImage.Format_RGB888)
             self.addPixmap(QtGui.QPixmap.fromImage(self.qt_image))
 
             self.image_loaded.emit(self.directory, self.current_image_name)
