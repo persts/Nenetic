@@ -194,7 +194,7 @@ class Canvas(QtWidgets.QGraphicsScene):
 
     def relabel_selected_points(self):
         if self.current_class_name is not None:
-            for class_name, point in self.selection:
+            for _, point in self.selection:
                 self.add_point(point)
             self.delete_selected_points()
 
