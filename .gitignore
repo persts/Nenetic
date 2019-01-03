@@ -1,5 +1,6 @@
-.vscode
-misc
-data
-__pycache__
+tutorial/
+data/
+misc/
+__pycache__/
 setup.cfg
+.vscode

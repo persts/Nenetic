@@ -134,6 +134,12 @@ class Canvas(QtWidgets.QGraphicsScene):
                 self.qt_image = QtGui.QImage(imageArray.data, imageArray.shape[1], imageArray.shape[0], QtGui.QImage.Format_RGB888)
             self.addPixmap(QtGui.QPixmap.fromImage(self.qt_image))
 
+            self.classified_image = QtGui.QPixmap(self.qt_image.width(), self.qt_image.height())
+            self.classified_image.fill(QtCore.Qt.black)
+            self.classified_image = self.addPixmap(self.classified_image)
+            self.classified_image.setOpacity(self.opacity)
+            self.classified_image.hide()
+
             self.image_loaded.emit(self.directory, self.current_image_name)
             self.display_points()
         else:
