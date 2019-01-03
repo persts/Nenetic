@@ -38,7 +38,7 @@ class Vector(QtCore.QObject):
     progress = QtCore.pyqtSignal(int)
     feedback = QtCore.pyqtSignal(str, str)
 
-    def __init__(self, layer_definitions=[], pad=0):
+    def __init__(self, layer_definitions=[], pad=0, stride=1):
         QtCore.QObject.__init__(self)
         self.classes = []
         self.points = {}
@@ -49,6 +49,7 @@ class Vector(QtCore.QObject):
 
         self.layer_definitions = layer_definitions
         self.pad = pad
+        self.stride = stride
 
         self.stack = None
         self.generator = Generator()

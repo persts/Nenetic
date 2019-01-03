@@ -85,6 +85,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
             self.progressBar.setValue(0)
             self.progressBar.setRange(0, array.shape[0])
             self.classifier.image = array
+            self.classifier.stride = self.spinBoxStride.value()
             self.classifier.threshold = self.doubleSpinBoxConfidence.value()
             self.pushButtonStopClassification.setEnabled(True)
             self.disable_action_buttons()

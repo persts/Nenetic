@@ -43,6 +43,7 @@ class Classifier(QtCore.QThread):
         self.image = None
         self.result = None
         self.threshold = 0.9
+        self.stride = 1
         self.model = model
 
         if model is not None:
@@ -73,7 +74,7 @@ class Classifier(QtCore.QThread):
     def run(self):
         if self.model is not None:
             self.feedback.emit('Classifier', 'Preparing extractors')
-            extractor_pool = ExtractorPool(self.image, self.extractor_name, self.extractor_kwargs)
+            extractor_pool = ExtractorPool(self.image, self.stride, self.extractor_name, self.extractor_kwargs)
             extractor_pool.start()
             self.result = np.zeros((self.image.shape[0], self.image.shape[1], 3))
             while not extractor_pool.ready:
@@ -94,6 +95,7 @@ class Classifier(QtCore.QThread):
                     if self.extractor_type == 'raster':
                         keep_prob = graph.get_tensor_by_name('keep_prob:0')
                     progress = 0
+                    delta = self.stride // 2
                     while extractor_pool.isRunning():
                         count = 0
                         for c in range(processes):
@@ -106,12 +108,17 @@ class Classifier(QtCore.QThread):
                                     else:
                                         predictions = sess.run(prediction, feed_dict={X: extractor_pool.arrays[c]})
                                     extractor_pool.states[c].value = -1
-                                for i in range(self.image.shape[1]):
+                                for i in range(len(predictions)):
                                     p = np.argmax(predictions[i])
                                     if predictions[i][p] >= self.threshold:
                                         class_name = self.classes[p]
-                                        self.result[row, i] = self.colors[class_name]
-                                progress += 1
+                                        # Calcuate offsets: negatives should be handled gracefully by numpy
+                                        x_start = (i * self.stride) - delta
+                                        x_end = (i * self.stride) + delta + 1
+                                        y_start = row - delta
+                                        y_end = row + delta + 1
+                                        self.result[y_start:y_end, x_start:x_end] = self.colors[class_name]
+                                progress += 1 * self.stride
                                 self.progress.emit(progress)
                                 if progress % 20 == 0:
                                     self.prep_update()
@@ -124,6 +131,7 @@ class Classifier(QtCore.QThread):
                                 self.feedback.emit('Classifier', 'Classification interrupted.')
                         if count == 0:
                             self.msleep(500)
+                self.progress.emit(self.image.shape[0])
                 self.feedback.emit('Classifier', 'Classification completed.')
             self.prep_update()
             extractor_pool = None

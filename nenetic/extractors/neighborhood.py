@@ -28,20 +28,23 @@ from nenetic.extractors import Vector
 
 
 class Neighborhood(Vector):
-    def __init__(self, layer_definitions=[], pad=0):
-        Vector.__init__(self, layer_definitions=layer_definitions, pad=pad)
+    def __init__(self, layer_definitions=[], pad=0, stride=1):
+        Vector.__init__(self, layer_definitions=layer_definitions, pad=pad, stride=stride)
         self.name = 'Neighborhood'
 
     def extract_row(self, row, dst=None):
         if self.stack is not None:
+            # Get origina image shape, i.e, remove padding
             cols = self.stack.shape[1] - (self.pad * 2)
+            # Take into consideration stride width
+            cols = cols // self.stride
             if dst is None:
                 vector = self.extract_at(0, row)
                 vector = np.ndarray((cols, ) + vector.shape)
             else:
                 vector = dst
             for i in range(cols):
-                self.extract_at(i, row, dst=vector[i])
+                self.extract_at(i * self.stride, row, dst=vector[i])
             return vector
 
     def extract_at(self, x, y, dst=None):

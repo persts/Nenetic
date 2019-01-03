@@ -47,11 +47,13 @@ def extract(extractor, rows, mem, state, shape):
 
 class ExtractorPool(QtCore.QThread):
 
-    def __init__(self, image, extractor_name, extractor_kwargs):
+    def __init__(self, image, stride, extractor_name, extractor_kwargs):
         QtCore.QThread.__init__(self)
         self.image = image
+        self.stride = stride
         self.extractor_name = extractor_name
         self.extractor_kwargs = extractor_kwargs
+        self.extractor_kwargs['stride'] = stride
 
         self.processes = []
         self.states = []
@@ -66,11 +68,16 @@ class ExtractorPool(QtCore.QThread):
         else:
             self.extractor = Region(**self.extractor_kwargs)
         self.extractor.preprocess(self.image)
+        # Fetch dimensions of vector for a simple location
         vector = self.extractor.extract_at(0, 0)
-        shape = ((self.image.shape[1], ) + vector.shape)
+        # Calculate number of colums takinginto consideration stride
+        cols = self.image.shape[1] // self.stride
+        shape = ((cols, ) + vector.shape)
         mem_size = 1
+        # Calculate the size of the memory needed for one row
         for s in shape:
             mem_size *= s
+        # Determine the max number of processes we can spawn
         mem_available = psutil.virtual_memory().available / 1024 / 1024 / 2
         row_size = (mem_size * 4) / 1024 / 1024
         max_children = int(mem_available / row_size)
@@ -82,12 +89,13 @@ class ExtractorPool(QtCore.QThread):
             state = Value('i', -1)
             mem = Array(ctypes.c_float, mem_size)
             array = np.frombuffer(mem.get_obj(), dtype=np.float32).reshape(shape)
-            rows = [x for x in range(i, self.image.shape[0], max_children)]
-            p = Process(target=extract, args=(self.extractor, rows, mem, state, shape))
-            self.processes.append(p)
-            self.mem.append(mem)
-            self.states.append(state)
-            self.arrays.append(array)
+            rows = [x for x in range(i * self.stride, self.image.shape[0], max_children * self.stride)]
+            if len(rows) > 0:
+                p = Process(target=extract, args=(self.extractor, rows, mem, state, shape))
+                self.processes.append(p)
+                self.mem.append(mem)
+                self.states.append(state)
+                self.arrays.append(array)
 
         self.ready = True
 
