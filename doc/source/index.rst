@@ -10,4 +10,4 @@
    :caption: Table of contents:
    :numbered:
 
-   NeneticGuide_v2
+   NeneticGuide
