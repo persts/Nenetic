@@ -1,7 +1,10 @@
 tutorial/
 data/
 misc/
+build/
 __pycache__/
 setup.cfg
 .vscode
-build/
+*.bpm
+*.pnt
+*.p
