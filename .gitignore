@@ -4,3 +4,4 @@ misc/
 __pycache__/
 setup.cfg
 .vscode
+build/
