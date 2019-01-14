@@ -9,8 +9,6 @@ The Neural Network Image Classifier (Nenetic) is a tool to label image pixels in
 Download and install Nenetic
 Nenetic is a Python 3 program and can be downloaded from a GitHub repository: https://github.com/persts/Nenetic. Before running Nenetic you must first install the following:
 
-**NEED TO ADD REQUIRED PYTHON PACKAGES AND OTHER SOFTWARE**
-
 To run Nenetic open a terminal window and navigate to the Nenetic directory with the file “main.py”. In the terminal window type “python3 main.py” to launch the Nenetic application. 
 
 Nenetic user interface
@@ -164,11 +162,15 @@ Citations and license information
 ---------------------------------
 If you use Nenetic on data that result in a publication, report, or online analysis, we ask that you include the following reference: Ersts, P.E. 2018. Neural Network Image Classifier. American Museum of Natural History, Center for Biodiversity and Conservation. Available from https://github.com/persts/Nenetic. (accessed on the date).
 
-If you cite this user guide we ask that you include the following information:
-Horning, N. 2018. Neural Network Image Classifier (Nenetic) User Guide. American Museum of Natural History, Center for Biodiversity and Conservation. Available from http://biodiversityinformatics.amnh.org/. (accessed on the date).
+Nenetic is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
+version.
 
-This document is licensed under a GNU Free Documentation License. 
-Copyright (C)  2018 Ned Horning
-Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.3 or any later version published by the Free Software Foundation; with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts. A copy of the license is available at: https://www.gnu.org/licenses/fdl.html#addendum
+Nenetic is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+Public License for more details.
+
+You should have received a copy of the GNU General Public License along with with this software. If not, see
+<http://www.gnu.org/licenses/>.
 
 Any questions or comment related to this document should be sent to Ned Horning – horning@amnh.org.
