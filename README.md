@@ -2,7 +2,7 @@
 The Neural Network Image Classifier (Nenetic) is an open source tool written in Python to label image pixels with discrete classes to create products such as land cover maps. The user interface is designed to facilitate a workflow that involves selecting training data locations, extracting training data using original image pixel data and computed features, building models, and classifying images. The current version works with 3-band images such as those acquired from typical digital cameras.
 
 
-![Screen Shot](/doc/NeneticTraining.png)
+![Screen Shot](doc/source/Images/NeneticTraining.png)
 
 
 ## Installation
