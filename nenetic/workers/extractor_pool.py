@@ -99,7 +99,7 @@ class ExtractorPool(QtCore.QThread):
             row_size = (mem_size * 4) / 1024 / 1024
             max_children = int(mem_available / row_size)
         else:
-            max_children = cpu_count - 2
+            max_children = cpu_count() - 2
         if max_children <= 0:
             max_children = 1
         elif max_children > 250:
