@@ -189,8 +189,8 @@ class ConvTrainer(QtCore.QThread):
                 for b in range(total_batch):
                     train_op.run(feed_dict={X: batch_x[b], Y: batch_y[b], keep_prob: 0.5})
                     loss, acc = sess.run([loss_op, accuracy], feed_dict={X: batch_x[i], Y: batch_y[i], keep_prob: 1.0})
-                    avg_loss += loss / total_batch
-                    avg_acc += acc / total_batch
+                    avg_loss += loss / len(batch_x)
+                    avg_acc += acc / len(batch_x)
                 message = 'Epoch: {} Avg Batch [loss: {:.4f}  acc: {:.3f}]'.format(epoch, avg_loss, avg_acc)
                 self.feedback.emit('Train', message)
                 log.write(message + "\n")
