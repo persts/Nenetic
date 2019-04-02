@@ -25,14 +25,20 @@
 import time
 import ctypes
 import numpy as np
+import tensorflow as tf
 from PyQt5 import QtCore
-from multiprocessing import Process, Value, Array
+from multiprocessing import Process, Value, Array, RawArray, cpu_count
 from nenetic.extractors import Region, Neighborhood
 
 import psutil
 
 
-def extract(extractor, rows, mem, state, shape):
+def extract(extractor_def, shared_stack, rows, mem, state, shape):
+    if extractor_def['name'] == 'Neighborhood':
+        extractor = Neighborhood(**extractor_def['kwargs'])
+    else:
+        extractor = Region(**extractor_def['kwargs'])
+    extractor.stack = np.frombuffer(shared_stack, dtype=np.float32).reshape(extractor_def['shape'])
     array = np.frombuffer(mem.get_obj(), dtype=np.float32).reshape(shape)
     for row in rows:
         with state.get_lock():
@@ -68,6 +74,16 @@ class ExtractorPool(QtCore.QThread):
         else:
             self.extractor = Region(**self.extractor_kwargs)
         self.extractor.preprocess(self.image)
+        # Build a shared version of the extractor's stack
+        extractor_def = {'name': self.extractor_name, 'shape': self.extractor.stack.shape, 'kwargs': self.extractor_kwargs}
+        mem_size = 1
+        for s in self.extractor.stack.shape:
+            mem_size *= s
+        self.shared_stack = RawArray(ctypes.c_float, mem_size)
+        stack_shape = self.extractor.stack.shape
+        tmp = np.frombuffer(self.shared_stack, dtype=np.float32).reshape(stack_shape)
+        tmp[:,:,:] = self.extractor.stack[:,:,:]
+        tmp = None
         # Fetch dimensions of vector for a simple location
         vector = self.extractor.extract_at(0, 0)
         # Calculate number of colums takinginto consideration stride
@@ -78,27 +94,31 @@ class ExtractorPool(QtCore.QThread):
         for s in shape:
             mem_size *= s
         # Determine the max number of processes we can spawn
-        mem_available = psutil.virtual_memory().available / 1024 / 1024 / 2
-        row_size = (mem_size * 4) / 1024 / 1024
-        max_children = int(mem_available / row_size)
-        if max_children == 0:
+        if tf.test.is_gpu_available(cuda_only=False):
+            mem_available = psutil.virtual_memory().available / 1024 / 1024 / 2
+            row_size = (mem_size * 4) / 1024 / 1024
+            max_children = int(mem_available / row_size)
+        else:
+            max_children = cpu_count() - 2
+        if max_children <= 0:
             max_children = 1
         elif max_children > 250:
             max_children = 250
+        print(max_children)
         for i in range(max_children):
             state = Value('i', -1)
             mem = Array(ctypes.c_float, mem_size)
             array = np.frombuffer(mem.get_obj(), dtype=np.float32).reshape(shape)
             rows = [x for x in range(i * self.stride, self.image.shape[0], max_children * self.stride)]
             if len(rows) > 0:
-                p = Process(target=extract, args=(self.extractor, rows, mem, state, shape))
+                p = Process(target=extract, args=(extractor_def, self.shared_stack, rows, mem, state, shape))
                 self.processes.append(p)
                 self.mem.append(mem)
                 self.states.append(state)
                 self.arrays.append(array)
-
+        
+        self.extractor = None
         self.ready = True
-
         for p in self.processes:
             p.start()
 
