@@ -6,8 +6,7 @@
 
    
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Table of contents:
-   :numbered:
 
    NeneticGuide

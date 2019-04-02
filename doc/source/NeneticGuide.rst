@@ -15,16 +15,16 @@ Nenetic user interface
 ======================
 The graphical user interface is divided into three panes:
 
-1. Training data collection
----------------------------
+1 Training data collection
+
 - Class manager: Add, remove, rename, and set display color for classes
 - Point summary: Displays total points by class per image
 - Load, save, export
 
-2. Current image: Current image used to select training points and for classification
--------------------------------------------------------------------------------------
-3. Model toolkit
-----------------
+2 Current image: Current image used to select training points and for classification
+
+3 Model toolkit
+
 - Training data extraction tool
 - Train fully connected network
 - Train convolutional network
@@ -32,7 +32,7 @@ The graphical user interface is divided into three panes:
 - Status updates: Feedback and progress information
 
 .. figure:: Images/NeneticGUI_Numbered_v2.png
-   :width: 700
+   :width: 450
    :align: center
 
 Nenetic GUI panes
@@ -146,7 +146,7 @@ This pane displays the status of each step in the work flow. At the bottom of th
 Helper scripts
 ==================
 Additional python scrips have been created to import and merge training data. The current scripts include:
-csv_import.py: Imports a CSV file with image coordinates and labels to define training data locations in an image. The file must have three fields; X coordinate, Y coordinate, and class number (lebel). The first line of the CSV file is skipped. Here is an example with the first three lines of a CSV file:
+- **csv_import.py**: Imports a CSV file with image coordinates and labels to define training data locations in an image. The file must have three fields; X coordinate, Y coordinate, and class number (label). The first line of the CSV file is skipped. Here is an example with the first three lines of a CSV file:
 "x","y","classVector"
 2228.5,1238.5,5
 2229.5,1238.5,5
@@ -162,15 +162,11 @@ Citations and license information
 ---------------------------------
 If you use Nenetic on data that result in a publication, report, or online analysis, we ask that you include the following reference: Ersts, P.E. 2018. Neural Network Image Classifier. American Museum of Natural History, Center for Biodiversity and Conservation. Available from https://github.com/persts/Nenetic. (accessed on the date).
 
-Nenetic is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
-License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later
-version.
+If you cite this user guide we ask that you include the following information:
+Horning, N. 2018. Neural Network Image Classifier (Nenetic) User Guide. American Museum of Natural History, Center for Biodiversity and Conservation. Available from http://biodiversityinformatics.amnh.org/. (accessed on the date).
 
-Nenetic is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
-implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
-Public License for more details.
-
-You should have received a copy of the GNU General Public License along with with this software. If not, see
-<http://www.gnu.org/licenses/>.
+This document is licensed under a GNU Free Documentation License. 
+Copyright (C)  2018 Ned Horning
+Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.3 or any later version published by the Free Software Foundation; with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts. A copy of the license is available at: https://www.gnu.org/licenses/fdl.html#addendum
 
 Any questions or comment related to this document should be sent to Ned Horning – horning@amnh.org.
