@@ -30,6 +30,8 @@ import tensorflow as tf
 from PyQt5 import QtCore
 from tabulate import tabulate
 
+import tensorflow.compat.v1 as tf
+
 
 class ConvTrainer(QtCore.QThread):
     progress = QtCore.pyqtSignal(int)
@@ -70,20 +72,20 @@ class ConvTrainer(QtCore.QThread):
         return data, header
 
     def conv2d(self, x, filter_count, filter_size):
-        W = tf.Variable(tf.truncated_normal([filter_size, filter_size, x.shape[3].value, filter_count], stddev=0.1))
+        W = tf.Variable(tf.truncated_normal([filter_size, filter_size, x.shape[3], filter_count], stddev=0.1))
         b = tf.Variable(tf.truncated_normal([filter_count], stddev=0.1))
         conv = tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
         conv = tf.nn.bias_add(conv, b)
         return tf.nn.relu(conv)
 
     def conv2d_135(self, x, filter_count):
-        one_filter = tf.Variable(tf.truncated_normal([1, 1, x.shape[3].value, filter_count], stddev=0.1))
+        one_filter = tf.Variable(tf.truncated_normal([1, 1, x.shape[3], filter_count], stddev=0.1))
         one_conv = tf.nn.conv2d(x, one_filter, strides=[1, 1, 1, 1], padding='SAME')
 
-        three_filter = tf.Variable(tf.truncated_normal([3, 3, x.shape[3].value, filter_count], stddev=0.1))
+        three_filter = tf.Variable(tf.truncated_normal([3, 3, x.shape[3], filter_count], stddev=0.1))
         three_conv = tf.nn.conv2d(x, three_filter, strides=[1, 1, 1, 1], padding='SAME')
 
-        five_filter = tf.Variable(tf.truncated_normal([5, 5, x.shape[3].value, filter_count], stddev=0.1))
+        five_filter = tf.Variable(tf.truncated_normal([5, 5, x.shape[3], filter_count], stddev=0.1))
         five_conv = tf.nn.conv2d(x, five_filter, strides=[1, 1, 1, 1], padding='SAME')
 
         conv = tf.concat([one_conv, three_conv, five_conv], axis=3)
@@ -92,7 +94,7 @@ class ConvTrainer(QtCore.QThread):
         return tf.nn.relu(conv)
 
     def conv2d_135_reduction(self, x, filter_count):
-        one_filter = tf.Variable(tf.truncated_normal([1, 1, x.shape[3].value, filter_count], stddev=0.1))
+        one_filter = tf.Variable(tf.truncated_normal([1, 1, x.shape[3], filter_count], stddev=0.1))
         one_conv = tf.nn.conv2d(x, one_filter, strides=[1, 1, 1, 1], padding='SAME')
 
         three_conv_1 = self.conv2d(x, 1, 1)
@@ -109,7 +111,7 @@ class ConvTrainer(QtCore.QThread):
         return tf.nn.relu(conv)
 
     def fc(self, x, length):
-        W = tf.Variable(tf.truncated_normal([x.shape[1].value, length], stddev=0.1))
+        W = tf.Variable(tf.truncated_normal([x.shape[1], length], stddev=0.1))
         b = tf.Variable(tf.truncated_normal([length], stddev=0.1))
         return tf.matmul(x, W) + b
 
@@ -154,7 +156,7 @@ class ConvTrainer(QtCore.QThread):
             network.append(layer)
             last_layer = layer
 
-        length = last_layer.shape[1].value * last_layer.shape[2].value * last_layer.shape[3].value
+        length = last_layer.shape[1] * last_layer.shape[2] * last_layer.shape[3]
         flat = tf.reshape(last_layer, [-1, length])
 
         fc_1 = tf.nn.relu(self.fc(flat, self.final_layer_size))

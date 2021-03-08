@@ -149,7 +149,7 @@ class PointWidget(QtWidgets.QWidget, WIDGET):
 
     def load(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Training Points', self.canvas.directory, 'Point Files (*.pnt)')
-        if file_name[0] is not '':
+        if file_name[0] != '':
             self.canvas.load_points(file_name[0])
 
     def reset(self):
@@ -192,7 +192,7 @@ class PointWidget(QtWidgets.QWidget, WIDGET):
 
     def save(self):
         file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Points', os.path.join(self.canvas.directory, 'untitled.pnt'), 'Point Files (*.pnt)')
-        if file_name[0] is not '':
+        if file_name[0] != '':
             self.canvas.save_points(file_name[0])
 
     def selection_changed(self, selected, deselected):

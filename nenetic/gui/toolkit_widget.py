@@ -130,7 +130,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
                 file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.json'), 'Point Files (*.json)')
             else:
                 file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Training Data', os.path.join(self.directory, 'untitled.p'), 'Point Files (*.p)')
-            if file_name[0] is not '':
+            if file_name[0] != '':
                 self.disable_action_buttons()
 
                 self.progress_max = point_count
@@ -176,12 +176,12 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
     def load_classification(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Load Classified Image', self.directory, 'PNG (*.png)')
-        if file_name[0] is not '':
+        if file_name[0] != '':
             self.classifier.load_classified_image(file_name[0])
 
     def load_model(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Model', self.directory, 'Model Metadata (*.meta)')
-        if file_name[0] is not '':
+        if file_name[0] != '':
             self.classifier = Classifier(file_name[0])
             self.classifier.progress.connect(self.progressBar.setValue)
             self.classifier.feedback.connect(self.log)
@@ -193,7 +193,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
         self.progressBar.setValue(0)
         self.progressBar.setRange(0, 0)
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Training Data', self.directory, 'Point Files (*.json *.p)')
-        if file_name[0] is not '':
+        if file_name[0] != '':
             if file_name[0][-4:].lower() == 'json':
                 file = open(file_name[0], 'r')
                 self.training_data = json.load(file)
@@ -223,7 +223,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
 
     def load_fc_training_data(self):
         file_name = QtWidgets.QFileDialog.getOpenFileName(self, 'Select Training Data', self.directory, 'Point Files (*.json *.p)')
-        if file_name[0] is not '':
+        if file_name[0] != '':
             if file_name[0][-4:].lower() == 'json':
                 file = open(file_name[0], 'r')
                 self.training_data = json.load(file)
@@ -254,7 +254,7 @@ class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
     def save_classification(self):
         if self.classifier is not None:
             file_name = QtWidgets.QFileDialog.getSaveFileName(self, 'Save Classified Image', os.path.join(self.canvas.directory, 'untitled.png'), 'PNG (*.png)')
-            if file_name[0] is not '':
+            if file_name[0] != '':
                 self.classifier.save_classification(file_name[0])
 
     def show_classification(self):

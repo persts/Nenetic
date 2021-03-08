@@ -25,7 +25,7 @@
 import os
 import json
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from PIL import Image, ImageQt
 from PyQt5 import QtCore, QtGui
 

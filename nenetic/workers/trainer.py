@@ -25,10 +25,12 @@
 import os
 import json
 import numpy as np
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 from PyQt5 import QtCore
 from tabulate import tabulate
+
+tf.compat.v1.disable_eager_execution()
 
 
 class FcTrainer(QtCore.QThread):
@@ -68,7 +70,7 @@ class FcTrainer(QtCore.QThread):
         return data, header
 
     def fc(self, x, length):
-        W = tf.Variable(tf.truncated_normal([x.shape[1].value, length], stddev=0.1))
+        W = tf.Variable(tf.truncated_normal([x.shape[1], length], stddev=0.1))
         b = tf.Variable(tf.truncated_normal([length], stddev=0.1))
         return tf.matmul(x, W) + b
 

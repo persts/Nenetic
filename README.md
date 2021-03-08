@@ -8,44 +8,46 @@ The Neural Network Image Classifier (Nenetic) is an open source tool written in 
 ## Installation
 
 ### Dependencies
-Nenetic is being developed on Ubuntu 18.04 with the following libraries:
+Nenetic is being developed on Ubuntu 20.04 with the following libraries:
 
-* PyQt5 (5.10.1)
+* PyQt5 (5.15.1)
 * TKinter (3.6.7)
-* Pillow (5.4.1)
-* Numpy (1.15.4)
-* Scipy (1.2.0)
-* Tabulate (0.8.2)
-* Psutil (5.4.8)
-* Tensorflow
+* Pillow (8.0.1)
+* Numpy (1.19.5)
+* Scipy (1.5.4)
+* Tabulate (0.8.9)
+* Psutil (5.7.3)
+* Tensorflow (2.4.0)
 
-Install GUI libraries:
-
+Virtual Environment Setup:
 ``` bash
-sudo apt install python3-pyqt5 python3-tk
-```
-Install pip3 and install / upgrade dependencies:
+cd %nenetic workspace%
 
-```bash
-sudo apt install python3-pip
-sudo -H pip3 install --upgrade pillow
-sudo -H pip3 install numpy
-sudo -H pip3 install scipy
-sudo -H pip3 install tabulate
-sudo -H pip3 install psutil
+[Linux] 
+python3 -m venv nenetic-env
+source nenetic-env/bin/activate
+ 
+[Windows] 
+python -m venv nenetic-env
+nenetic-env\Scripts\activate
+
+
+python -m pip install pip --upgrade
+python -m pip install pillow
+python -m pip install scipy
+python -m pip install tabulate
+python -m pip install psutil
+python -m pip install pyqt5
 ```
 
 For detailed steps to install TensorFlow, follow the [TensorFlow installation instructions](https://www.tensorflow.org/install/). A typical user can install Tensorflow using one of the following commands:
 ``` bash
-# For CPU
-sudo -H pip3 install tensorflow
-# For GPU
-sudo -H pip3 install tensorflow-gpu
+python -m pip install tensorflow
 ```
 
 ## Launching Nenetic
 ```bash
 git clone https://github.com/persts/Nenetic
 cd Nenetic
-python3 main.py
+python main.py
 ```
