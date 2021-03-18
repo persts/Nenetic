@@ -23,6 +23,7 @@
 #
 # --------------------------------------------------------------------------
 import os
+import sys
 from PyQt5 import QtCore, QtWidgets, uic
 
 from nenetic.gui import Canvas
@@ -30,7 +31,10 @@ from nenetic.gui import PointWidget
 from nenetic.gui import ToolkitWidget
 
 
-CLASS_DIALOG, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'central_widget.ui'))
+bundle_dir = os.path.dirname(__file__)
+if getattr(sys, 'frozen', False):
+    bundle_dir = sys._MEIPASS
+CLASS_DIALOG, _ = uic.loadUiType(os.path.join(bundle_dir, 'central_widget.ui'))
 
 
 class CentralWidget(QtWidgets.QDialog, CLASS_DIALOG):

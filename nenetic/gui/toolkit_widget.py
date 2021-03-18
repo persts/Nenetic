@@ -23,6 +23,7 @@
 #
 # --------------------------------------------------------------------------
 import os
+import sys
 import json
 import time
 import pickle
@@ -34,7 +35,10 @@ from nenetic.workers import FcTrainer
 from nenetic.workers import ConvTrainer
 from nenetic.workers import Classifier
 
-CLASS_DIALOG, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), 'toolkit_widget.ui'))
+bundle_dir = os.path.dirname(__file__)
+if getattr(sys, 'frozen', False):
+    bundle_dir = sys._MEIPASS
+CLASS_DIALOG, _ = uic.loadUiType(os.path.join(bundle_dir, 'toolkit_widget.ui'))
 
 
 class ToolkitWidget(QtWidgets.QDialog, CLASS_DIALOG):
